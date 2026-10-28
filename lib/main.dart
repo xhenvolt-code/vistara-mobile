@@ -15,7 +15,9 @@ class VistaraApp extends StatelessWidget {
     return MaterialApp(
       title: 'Vistara',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      themeMode: ThemeMode.system,
+      darkTheme: AppTheme.dark,
+      theme: AppTheme.light,
       home: const AppShell(),
     );
   }

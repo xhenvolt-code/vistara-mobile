@@ -149,16 +149,20 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final displayName = _session?.user.name;
+    final palette = context.vistara;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: AppTheme.background,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: AppTheme.background,
-        systemNavigationBarIconBrightness: Brightness.light,
+      value: SystemUiOverlayStyle(
+        statusBarColor: palette.background,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: palette.background,
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: palette.background,
         body: SafeArea(
           bottom: false,
           child: IndexedStack(
@@ -199,8 +203,8 @@ class _AppShellState extends State<AppShell> {
           ),
         ),
         bottomNavigationBar: DecoratedBox(
-          decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: AppTheme.line)),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: palette.line)),
           ),
           child: NavigationBar(
             selectedIndex: _selectedIndex,

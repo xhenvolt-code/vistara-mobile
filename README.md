@@ -1,85 +1,118 @@
 # Vistara Mobile
 
-The Android/iOS companion to the Vistara Next.js service. The mobile app uses
-the same Neon-authenticated accounts, the same rights-approved film catalogue,
-and the access products managed in the Vistara admin console.
+Vistara Mobile is the Flutter client for the Vistara film-discovery and
+account platform. It connects to the Vistara Next.js service for the
+rights-approved catalogue, managed access products, Neon-backed identity,
+verified viewing entitlements, and purchase history.
 
-## Versioning
+The client follows the device appearance setting and provides branded light
+and dark themes. Catalogue and account data are served by the configured
+Vistara deployment; credentials and session cookies are handled through the
+platform's secure storage.
 
-The current app version is `1.0.0+2`. Follow the [versioning and release
-policy](VERSIONING.md) for semantic version changes, build revisions, and
-versioned Git commits and tags.
+## Production capabilities
 
-## Current mobile features
+- Browse and search films published by Vistara with approved distribution
+  rights and ready video assets.
+- View film artwork and metadata supplied by the Vistara service.
+- Create an account, sign in, sign out, and request a password reset through
+  the Vistara Neon Auth integration.
+- View account status, verified active access, and recent purchase history.
+- View access products and pricing managed in the Vistara admin console.
+- Follow system light/dark appearance with a Violet Vistara identity.
 
-- Cinematic black-and-red discovery experience with featured films and
-  searchable catalogue.
-- Catalogue and artwork loaded from Vistara's published, rights-approved
-  catalogue when the API is configured. The offline preview uses clearly
-  identified sample artwork.
-- Neon email sign-in, account creation, and password reset through the Next.js
-  auth routes. Session cookies are stored with platform secure storage.
-- Account profile, verified active viewing entitlement, and recent purchase
-  history from the authenticated mobile-session endpoint.
-- Available access passes and prices loaded from admin-managed products.
-- Playback and MarzPay checkout remain unavailable, consistent with the
-  current web service. Passes are not sold until checkout is enabled.
+The client does not make up catalogue entries or pass prices in connected
+mode. When built without a service origin it clearly identifies the sample
+catalogue as preview content and disables live account and pass operations.
 
-The Next.js admin console remains the source of truth for catalogue publishing,
-rights approval, pass pricing/availability, payments, storage, and account
-administration. Those administrative operations are intentionally not exposed
-in the consumer app.
+## Service-dependent features
+
+Playback and payment checkout are intentionally unavailable until the Vistara
+service has production-ready playback delivery and verified MarzPay checkout.
+The app must not be represented as streaming films or accepting payments until
+those service capabilities are released. The admin console remains the source
+of truth for film rights, publishing, product management, payments, and
+account administration.
+
+## Requirements
+
+- Flutter SDK and Dart SDK versions matching `pubspec.yaml`.
+- Android Studio / Android SDK for Android builds, or Xcode on macOS for iOS.
+- A deployed Vistara Next.js service with the mobile routes, Neon Auth, and
+  database configuration enabled for connected operation.
+- A publicly reachable HTTPS service origin for devices. Do not use
+  `localhost` as the API origin on a physical phone.
 
 ## Configure and run
 
-The mobile app must use the publicly reachable HTTPS origin of the deployed
-Vistara Next.js app. Do not use `localhost` for a physical phone: it points to
-the phone itself.
+Install dependencies and run the checks:
 
 ```powershell
 flutter pub get
+flutter analyze
+flutter test
+```
+
+Run against the deployed Vistara service:
+
+```powershell
 flutter run --dart-define=VISTARA_API_BASE_URL=https://your-vistara-domain.example
 ```
 
-In offline preview mode (without `VISTARA_API_BASE_URL`), catalogue sample
-artwork is shown, but authentication and live pass data remain unavailable.
+`VISTARA_API_BASE_URL` must be an HTTP(S) origin with no path, query, or
+fragment. Use HTTPS in production; secure authentication cookies are not sent
+over HTTP. If the define is omitted, the app opens in a clearly labelled
+offline preview and does not claim that authentication or live data works.
 
-## Build an Android APK
+The client uses these service endpoints:
 
-Build a release APK for 64-bit Android phones:
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/mobile/catalogue` | Published rights-approved films with ready video assets |
+| `GET /api/mobile/access-products` | Available admin-managed passes |
+| `GET /api/mobile/session` | Authenticated profile, entitlement, and recent purchases |
+| `/api/auth/*` | Neon Auth email sign-in, sign-up, sign-out, and password reset |
+
+The Next.js deployment must have its existing database, Neon Auth, and public
+`APP_BASE_URL` settings configured. Mobile session responses are private and
+not cached; public catalogue and products use the server's short cache policy.
+
+## Build and release
+
+Build a 64-bit Android APK connected to the production service:
 
 ```powershell
 flutter build apk --release --target-platform android-arm64 `
   --dart-define=VISTARA_API_BASE_URL=https://your-vistara-domain.example
 ```
 
-The installer is written to
-`build/app/outputs/flutter-apk/app-release.apk`. This project currently signs
-release builds with the local Android debug key for sideload testing. Set up a
-private release signing key before distributing a production/store build; never
-commit that key or its passwords.
+The APK is written to
+`build/app/outputs/flutter-apk/app-release.apk`. Use the deployment's public
+HTTPS origin; a build without the define is an offline preview build.
 
-Run the app checks with:
+The Android release build currently uses the local debug signing key for
+sideload testing. Before production distribution, configure a private Android
+release key and protected CI signing secrets. Never commit signing keys,
+passwords, deployment credentials, or local environment files. A debug-signed
+APK is not suitable for Play Store release.
+
+Set the Android/iOS version in `pubspec.yaml` using
+`MAJOR.MINOR.PATCH+BUILD`. Release semantics, changelog, and the requirement
+to tie every release version to a matching commit and annotated tag are
+documented in [VERSIONING.md](VERSIONING.md). Record user-visible changes in
+[CHANGELOG.md](CHANGELOG.md).
+
+## Branding
+
+The launcher icon and in-app violet palette use the Vistara mark in
+`assets/images/vistara_app_icon.png`. Regenerate Android and iOS launcher
+assets after changing the source icon:
 
 ```powershell
-flutter analyze
-flutter test
+dart run flutter_launcher_icons
 ```
 
-## Next.js mobile API
+## Repository
 
-The Next.js service exposes public read-only endpoints for the published
-catalogue and available access products, plus an authenticated mobile-session
-endpoint for the profile, active entitlement, and purchase history. The mobile
-client continues to use the Next.js Neon Auth handler for email sign-in,
-sign-up, sign-out, and reset requests. Configure the existing Neon, database,
-and public `APP_BASE_URL` variables on the Next.js deployment.
-
-## Service limitations
-
-- The sample Fliqs artwork is not a real Vistara listing or evidence of
-  streaming rights.
-- The mobile player is a placeholder because playback delivery is not
-  implemented in Vistara.
-- No live MarzPay collection is initiated by the mobile app; checkout stays
-  disabled until the provider setup and payment verification are enabled.
+Issues and release history are tracked in the
+[vistara-mobile GitHub repository](https://github.com/xhenvolt-code/vistara-mobile).

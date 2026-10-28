@@ -4,6 +4,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vistara_mobile/main.dart';
 
 void main() {
+  testWidgets('application follows the operating system brightness', (
+    tester,
+  ) async {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+
+    await tester.pumpWidget(const VistaraApp());
+    expect(
+      Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
+      Brightness.light,
+    );
+
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    await tester.pumpWidget(const VistaraApp(key: ValueKey('dark-mode')));
+    expect(
+      Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
+      Brightness.dark,
+    );
+  });
+
   testWidgets('home introduces the preview catalogue', (tester) async {
     await tester.pumpWidget(const VistaraApp());
 
@@ -74,7 +94,7 @@ void main() {
 
   testWidgets('account form does not claim to authenticate', (tester) async {
     await tester.pumpWidget(const VistaraApp());
-    await tester.tap(find.byIcon(Icons.person_outline).first);
+    await tester.tap(find.byIcon(Icons.person_outline_rounded).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Welcome back'), findsOneWidget);

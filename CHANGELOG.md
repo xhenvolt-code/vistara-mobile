@@ -3,6 +3,13 @@
 All notable releases of Vistara Mobile are recorded here. Versions follow the
 policy in [VERSIONING.md](VERSIONING.md).
 
+## [1.1.0] - 2026-10-28
+
+- Add the Vistara violet V launcher icon and in-app brand mark.
+- Add coordinated light and dark themes that follow the device appearance.
+- Update Android launch surfaces to match the system light/dark setting.
+- Expand production setup, service integration, and signing guidance.
+
 ## [1.0.0] - 2026-10-28
 
 - Establish the initial versioned Vistara Mobile app.

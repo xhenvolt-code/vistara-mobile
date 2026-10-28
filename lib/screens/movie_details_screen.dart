@@ -42,7 +42,9 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
             onPressed: () => setState(() => _isSaved = !_isSaved),
             icon: Icon(
               _isSaved ? Icons.favorite : Icons.favorite_border,
-              color: _isSaved ? AppTheme.accent : Colors.white,
+              color: _isSaved
+                  ? context.vistara.accent
+                  : context.vistara.onBackground,
             ),
           ),
         ],
@@ -56,12 +58,15 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
               fit: StackFit.expand,
               children: [
                 MovieImage(movie: movie, backdrop: true, fit: BoxFit.cover),
-                const DecoratedBox(
+                DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0x00000000), AppTheme.background],
+                      colors: [
+                        const Color(0x00000000),
+                        context.vistara.background,
+                      ],
                       stops: [0.35, 1],
                     ),
                   ),
@@ -79,15 +84,15 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.accent,
+                          color: context.vistara.accent,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           movie.isSample
                               ? 'PREVIEW LISTING'
                               : 'VISTARA SELECTION',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.vistara.onAccent,
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.6,
@@ -114,7 +119,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                   '${movie.year ?? 'Year TBA'}  ·  ${movie.genre}'
                   '${movie.runtimeMinutes == null ? '' : '  ·  ${movie.runtimeMinutes} min'}'
                   '${movie.language == null || movie.language!.isEmpty ? '' : '  ·  ${movie.language}'}',
-                  style: const TextStyle(color: AppTheme.muted, fontSize: 13),
+                  style: TextStyle(color: context.vistara.muted, fontSize: 13),
                 ),
                 const SizedBox(height: 18),
                 SizedBox(
@@ -142,10 +147,10 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                             'Please check back later.',
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Details',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: context.vistara.onBackground,
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
                   ),
@@ -158,7 +163,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                                 'development only. A film description has not '
                                 'been added.'
                           : 'A description has not been added for this film.'),
-                  style: const TextStyle(color: AppTheme.muted, height: 1.5),
+                  style: TextStyle(color: context.vistara.muted, height: 1.5),
                 ),
                 const SizedBox(height: 24),
                 OutlinedButton(
@@ -172,11 +177,11 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                   const SizedBox(height: 24),
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'More like this',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: context.vistara.onBackground,
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                           ),

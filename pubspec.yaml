@@ -1,5 +1,5 @@
 name: vistara_mobile
-description: "Vistara mobile preview catalogue and access-pass experience."
+description: "Vistara mobile film discovery and account application."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+2
+version: 1.1.0+3
 
 environment:
   sdk: ^3.13.0
@@ -48,6 +48,15 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/vistara_app_icon.png
+  adaptive_icon_background: "#08091B"
+  adaptive_icon_foreground: assets/images/vistara_adaptive_foreground.png
+  remove_alpha_ios: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -62,6 +71,7 @@ flutter:
 
   assets:
     - assets/images/movies/
+    - assets/images/vistara_app_icon.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -46,7 +46,7 @@ class MoviePosterCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: const Color(0xFFF5F5F5),
+                color: context.vistara.onBackground,
                 fontSize: dense ? 11 : 14,
                 fontWeight: FontWeight.w700,
               ),
@@ -58,7 +58,7 @@ class MoviePosterCard extends StatelessWidget {
                 '${movie.isSample ? ' · Preview' : ''}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: AppTheme.muted, fontSize: 12),
+                style: TextStyle(color: context.vistara.muted, fontSize: 12),
               ),
             ],
           ],

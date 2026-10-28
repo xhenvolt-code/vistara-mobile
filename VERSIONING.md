@@ -24,8 +24,8 @@ the release commit.
 ## Release commit and tag
 
 Every release must have a dedicated commit that updates `pubspec.yaml` and
-`CHANGELOG.md`. Use a commit subject such as `release: v1.0.1`, and create an
-annotated Git tag `v1.0.1` on that exact commit. The tag omits the Flutter
+`CHANGELOG.md`. Use a commit subject such as `release: v1.1.0`, and create an
+annotated Git tag `v1.1.0` on that exact commit. The tag omits the Flutter
 build number; the tagged commit's `pubspec.yaml` records it.
 
 Before tagging, run:
@@ -40,11 +40,13 @@ Then create and publish the versioned commit and tag:
 
 ```powershell
 git add pubspec.yaml CHANGELOG.md
-git commit -m "release: v1.0.1"
-git tag -a v1.0.1 -m "Vistara Mobile v1.0.1"
+git commit -m "release: v1.1.0"
+git tag -a v1.1.0 -m "Vistara Mobile v1.1.0"
 git push origin main
-git push origin v1.0.1
+git push origin v1.1.0
 ```
 
-Replace the example version with the value chosen for the release. A release
-tag must never point to a different commit than the version bump it names.
+Replace the example version with the value chosen for the release. The current
+release is `1.1.0+3`; this version and build number must be recorded in the
+release commit and its matching tag. A release tag must never point to a
+different commit than the version bump it names.

@@ -106,8 +106,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 5,
                   decoration: BoxDecoration(
                     color: index == _featuredIndex
-                        ? AppTheme.accent
-                        : const Color(0xFF55565A),
+                        ? context.vistara.accent
+                        : context.vistara.line,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -118,9 +118,9 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.info_outline,
-                  color: AppTheme.accent,
+                  color: context.vistara.accent,
                   size: 15,
                 ),
                 const SizedBox(width: 6),
@@ -129,8 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     widget.isPreview
                         ? 'SAMPLE ARTWORK · NOT AVAILABLE TO WATCH'
                         : 'VISTARA SELECTION · PLAYBACK NOT AVAILABLE',
-                    style: const TextStyle(
-                      color: AppTheme.muted,
+                    style: TextStyle(
+                      color: context.vistara.muted,
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.75,
@@ -174,11 +174,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
         if (widget.isPreview)
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(20, 20, 20, 6),
             child: Text(
               'Stories worth staying in for.  ·  Uganda · UGX',
-              style: TextStyle(color: AppTheme.muted, fontSize: 11),
+              style: TextStyle(color: context.vistara.muted, fontSize: 11),
             ),
           ),
       ],
@@ -198,7 +198,7 @@ class _HomeLoadError extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          Text(message, style: const TextStyle(color: AppTheme.muted)),
+          Text(message, style: TextStyle(color: context.vistara.muted)),
           if (onRetry != null)
             TextButton(onPressed: onRetry, child: const Text('Try again')),
         ],
@@ -224,18 +224,18 @@ class _EmptyCatalogue extends StatelessWidget {
             isPreview
                 ? 'No sample titles to show.'
                 : 'No titles available yet.',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.vistara.onBackground,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
           ),
           if (!isPreview) ...[
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Films will appear here after they have been approved for '
               'distribution.',
-              style: TextStyle(color: AppTheme.muted, height: 1.5),
+              style: TextStyle(color: context.vistara.muted, height: 1.5),
             ),
             TextButton(onPressed: onExplore, child: const Text('Refresh')),
           ],
@@ -267,7 +267,7 @@ class _FeaturedMovieCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               MovieImage(movie: movie, backdrop: true, fit: BoxFit.cover),
-              const DecoratedBox(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -286,13 +286,13 @@ class _FeaturedMovieCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.accent,
+                    color: context.vistara.accent,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     movie.isSample ? 'PREVIEW' : 'VISTARA',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.vistara.onAccent,
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.6,
@@ -316,8 +316,8 @@ class _FeaturedMovieCard extends StatelessWidget {
                             movie.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: context.vistara.onBackground,
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                             ),
@@ -325,8 +325,10 @@ class _FeaturedMovieCard extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(
                             '${movie.year ?? 'Year TBA'}  ·  ${movie.genre}',
-                            style: const TextStyle(
-                              color: Color(0xFFD4D4D5),
+                            style: TextStyle(
+                              color: context.vistara.onBackground.withValues(
+                                alpha: 0.75,
+                              ),
                               fontSize: 11,
                             ),
                           ),
@@ -337,13 +339,13 @@ class _FeaturedMovieCard extends StatelessWidget {
                     Container(
                       width: 34,
                       height: 34,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.accent,
+                      decoration: BoxDecoration(
+                        color: context.vistara.accent,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.info_outline,
-                        color: Colors.white,
+                        color: context.vistara.onAccent,
                         size: 20,
                       ),
                     ),
@@ -378,8 +380,8 @@ class _SectionHeading extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: context.vistara.onBackground,
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
               ),
@@ -388,7 +390,7 @@ class _SectionHeading extends StatelessWidget {
           TextButton(
             onPressed: onTap,
             style: TextButton.styleFrom(
-              foregroundColor: AppTheme.accent,
+              foregroundColor: context.vistara.accent,
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 4),
             ),

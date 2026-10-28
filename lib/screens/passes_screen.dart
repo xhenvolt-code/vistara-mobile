@@ -50,9 +50,9 @@ class PassesScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.headlineLarge,
               ),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Available passes and prices are managed by the Vistara team.',
-                style: TextStyle(color: AppTheme.muted, height: 1.5),
+                style: TextStyle(color: context.vistara.muted, height: 1.5),
               ),
               const SizedBox(height: 24),
               if (isLoading)
@@ -86,9 +86,9 @@ class PassesScreen extends StatelessWidget {
                           'to Vistara. MarzPay checkout is not enabled.',
               ),
               const SizedBox(height: 22),
-              const Text(
+              Text(
                 'Stories worth staying in for.  ·  Uganda · UGX',
-                style: TextStyle(color: AppTheme.muted, fontSize: 12),
+                style: TextStyle(color: context.vistara.muted, fontSize: 12),
               ),
             ],
           ),
@@ -118,12 +118,12 @@ class _ProductList extends StatelessWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: AppTheme.accent.withValues(alpha: 0.13),
+                        color: context.vistara.accent.withValues(alpha: 0.13),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.confirmation_number_outlined,
-                        color: AppTheme.accent,
+                        color: context.vistara.accent,
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -133,8 +133,8 @@ class _ProductList extends StatelessWidget {
                         children: [
                           Text(
                             product.name,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: context.vistara.onBackground,
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
                             ),
@@ -144,16 +144,16 @@ class _ProductList extends StatelessWidget {
                             '${product.durationDays} '
                             '${product.durationDays == 1 ? 'day' : 'days'} '
                             'of access',
-                            style: const TextStyle(
-                              color: AppTheme.muted,
+                            style: TextStyle(
+                              color: context.vistara.muted,
                               fontSize: 12,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'UGX ${_formatAmount(product.priceUgx)}',
-                            style: const TextStyle(
-                              color: AppTheme.accent,
+                            style: TextStyle(
+                              color: context.vistara.accent,
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                             ),
@@ -162,9 +162,9 @@ class _ProductList extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(
+                    Icon(
                       Icons.lock_outline,
-                      color: AppTheme.muted,
+                      color: context.vistara.muted,
                       size: 20,
                     ),
                   ],
@@ -186,12 +186,12 @@ class _EmptyPasses extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        border: Border.all(color: AppTheme.line),
+        border: Border.all(color: context.vistara.line),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Text(
+      child: Text(
         'No access passes are available right now. Please check back soon.',
-        style: TextStyle(color: AppTheme.muted, height: 1.5),
+        style: TextStyle(color: context.vistara.muted, height: 1.5),
       ),
     );
   }
@@ -208,7 +208,7 @@ class _PassesError extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(message, style: const TextStyle(color: AppTheme.muted)),
+        Text(message, style: TextStyle(color: context.vistara.muted)),
         if (onRetry != null)
           TextButton(onPressed: onRetry, child: const Text('Try again')),
       ],
@@ -237,8 +237,8 @@ class _Eyebrow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
-        color: AppTheme.accent,
+      style: TextStyle(
+        color: context.vistara.accent,
         fontSize: 11,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.8,

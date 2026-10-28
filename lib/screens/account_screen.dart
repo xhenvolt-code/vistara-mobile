@@ -23,11 +23,11 @@ class AccountScreen extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 32,
-            backgroundColor: AppTheme.surfaceRaised,
+            backgroundColor: context.vistara.surfaceRaised,
             child: Text(
               _initials(session.user.name, session.user.email),
-              style: const TextStyle(
-                color: AppTheme.accent,
+              style: TextStyle(
+                color: context.vistara.accent,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -37,8 +37,8 @@ class AccountScreen extends StatelessWidget {
           Text(
             session.user.name.isEmpty ? session.user.email : session.user.name,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.vistara.onBackground,
               fontSize: 20,
               fontWeight: FontWeight.w800,
             ),
@@ -46,7 +46,7 @@ class AccountScreen extends StatelessWidget {
           Text(
             session.user.email,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppTheme.muted),
+            style: TextStyle(color: context.vistara.muted),
           ),
           if (session.user.accountStatus == 'SUSPENDED') ...[
             const SizedBox(height: 18),
@@ -122,14 +122,17 @@ class _InformationCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        leading: Icon(icon, color: AppTheme.accent),
+        leading: Icon(icon, color: context.vistara.accent),
         title: Text(title),
-        subtitle: Text(subtitle, style: const TextStyle(color: AppTheme.muted)),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(color: context.vistara.muted),
+        ),
         trailing: trailing == null
             ? null
             : Text(
                 trailing!,
-                style: const TextStyle(color: AppTheme.muted, fontSize: 11),
+                style: TextStyle(color: context.vistara.muted, fontSize: 11),
               ),
       ),
     );
@@ -146,10 +149,10 @@ class _StatusNotice extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.accent.withValues(alpha: 0.08),
+        color: context.vistara.accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(message, style: const TextStyle(color: AppTheme.muted)),
+      child: Text(message, style: TextStyle(color: context.vistara.muted)),
     );
   }
 }
@@ -163,8 +166,8 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
-        color: Colors.white,
+      style: TextStyle(
+        color: context.vistara.onBackground,
         fontSize: 17,
         fontWeight: FontWeight.w800,
       ),

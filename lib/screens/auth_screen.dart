@@ -136,8 +136,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                       'access and purchases together.'
                                 : 'Sign in with your Vistara email and '
                                       'password.',
-                            style: const TextStyle(
-                              color: AppTheme.muted,
+                            style: TextStyle(
+                              color: context.vistara.muted,
                               height: 1.5,
                             ),
                           ),
@@ -218,7 +218,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             const SizedBox(height: 14),
                             Text(
                               _error!,
-                              style: const TextStyle(color: Color(0xFFFF9C9C)),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                             ),
                           ],
                           if (_error == null &&
@@ -227,14 +229,16 @@ class _AuthScreenState extends State<AuthScreen> {
                             const SizedBox(height: 14),
                             Text(
                               widget.sessionError!,
-                              style: const TextStyle(color: Color(0xFFFF9C9C)),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                             ),
                           ],
                           if (_message != null) ...[
                             const SizedBox(height: 14),
                             Text(
                               _message!,
-                              style: const TextStyle(color: AppTheme.accent),
+                              style: TextStyle(color: context.vistara.accent),
                             ),
                           ],
                           if (!widget.api.isConfigured) ...[

@@ -14,14 +14,16 @@ class PreviewNotice extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.accent.withValues(alpha: 0.06),
-        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.25)),
+        color: context.vistara.accent.withValues(alpha: 0.06),
+        border: Border.all(
+          color: context.vistara.accent.withValues(alpha: 0.25),
+        ),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: AppTheme.accent, size: 20),
+          Icon(Icons.info_outline, color: context.vistara.accent, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -29,8 +31,8 @@ class PreviewNotice extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppTheme.accent,
+                  style: TextStyle(
+                    color: context.vistara.accent,
                     fontWeight: FontWeight.w800,
                   ),
                 ),

@@ -20,31 +20,27 @@ class VistaraHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       child: Row(
         children: [
-          InkWell(
-            onTap: onSignIn,
-            customBorder: const CircleBorder(),
-            child: Semantics(
-              button: true,
-              label: 'Open your Vistara account',
-              child: const CircleAvatar(
-                radius: 21,
-                backgroundColor: AppTheme.surfaceRaised,
-                child: Icon(
-                  Icons.person_outline,
-                  color: Color(0xFFE4E4E5),
-                  size: 22,
-                ),
+          Semantics(
+            image: true,
+            label: 'Vistara',
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(9),
+              child: Image.asset(
+                'assets/images/vistara_app_icon.png',
+                width: 42,
+                height: 42,
+                fit: BoxFit.cover,
               ),
             ),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'HI, WELCOME',
                 style: TextStyle(
-                  color: AppTheme.muted,
+                  color: context.vistara.muted,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
@@ -54,7 +50,7 @@ class VistaraHeader extends StatelessWidget {
               Text(
                 displayName?.isNotEmpty == true ? displayName! : 'Movie lover',
                 style: TextStyle(
-                  color: Color(0xFFF5F5F5),
+                  color: context.vistara.onBackground,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -67,13 +63,18 @@ class VistaraHeader extends StatelessWidget {
               onPressed: onSearch,
               tooltip: 'Search the catalogue',
               style: IconButton.styleFrom(
-                backgroundColor: AppTheme.surfaceRaised,
-                foregroundColor: const Color(0xFFF5F5F5),
+                backgroundColor: context.vistara.surfaceRaised,
+                foregroundColor: context.vistara.onBackground,
               ),
               icon: const Icon(Icons.search_rounded),
-            )
-          else
-            TextButton(onPressed: onSignIn, child: const Text('Sign in')),
+            ),
+          IconButton(
+            onPressed: onSignIn,
+            tooltip: displayName?.isNotEmpty == true
+                ? 'Open your Vistara account'
+                : 'Sign in to Vistara',
+            icon: const Icon(Icons.person_outline_rounded),
+          ),
         ],
       ),
     );

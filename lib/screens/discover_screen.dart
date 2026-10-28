@@ -88,7 +88,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           'when the mobile app is connected to its catalogue.'
                     : 'Search films approved for distribution by the Vistara '
                           'team.',
-                style: const TextStyle(color: AppTheme.muted, height: 1.5),
+                style: TextStyle(color: context.vistara.muted, height: 1.5),
               ),
               const SizedBox(height: 20),
               TextField(
@@ -158,7 +158,7 @@ class _CatalogueError extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(message, style: const TextStyle(color: AppTheme.muted)),
+        Text(message, style: TextStyle(color: context.vistara.muted)),
         if (onRetry != null)
           TextButton(onPressed: onRetry, child: const Text('Try again')),
       ],
@@ -183,10 +183,10 @@ class _EmptyResults extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        border: Border.all(color: AppTheme.line),
+        border: Border.all(color: context.vistara.line),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(message, style: const TextStyle(color: AppTheme.muted)),
+      child: Text(message, style: TextStyle(color: context.vistara.muted)),
     );
   }
 }
@@ -200,8 +200,8 @@ class _Eyebrow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
-        color: AppTheme.accent,
+      style: TextStyle(
+        color: context.vistara.accent,
         fontSize: 11,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.8,

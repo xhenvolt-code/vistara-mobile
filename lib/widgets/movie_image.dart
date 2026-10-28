@@ -49,10 +49,14 @@ class _ImagePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: AppTheme.surface,
+    return ColoredBox(
+      color: context.vistara.surface,
       child: Center(
-        child: Icon(Icons.movie_outlined, color: AppTheme.muted, size: 34),
+        child: Icon(
+          Icons.movie_outlined,
+          color: context.vistara.muted,
+          size: 34,
+        ),
       ),
     );
   }

@@ -11,7 +11,7 @@ class PlayerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.vistara.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
@@ -22,7 +22,10 @@ class PlayerScreen extends StatelessWidget {
                   IconButton(
                     tooltip: 'Close preview player',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: Icon(
+                      Icons.close,
+                      color: context.vistara.onBackground,
+                    ),
                   ),
                   Expanded(
                     child: Text(
@@ -30,8 +33,8 @@ class PlayerScreen extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.vistara.onBackground,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -55,17 +58,17 @@ class PlayerScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.movie_outlined,
-                          color: Color(0xFF606166),
+                          color: context.vistara.muted,
                           size: 44,
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Playback unavailable',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: context.vistara.onBackground,
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
@@ -75,8 +78,8 @@ class PlayerScreen extends StatelessWidget {
                           'No video is attached to this sample listing: '
                           '${movie.title}.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppTheme.muted,
+                          style: TextStyle(
+                            color: context.vistara.muted,
                             height: 1.5,
                           ),
                         ),
@@ -92,28 +95,31 @@ class PlayerScreen extends StatelessWidget {
                     onPressed: null,
                     icon: const Icon(Icons.play_arrow_rounded),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: LinearProgressIndicator(
                       value: 0,
                       minHeight: 2,
-                      backgroundColor: Color(0xFF434449),
-                      color: AppTheme.accent,
+                      backgroundColor: context.vistara.line,
+                      color: context.vistara.accent,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     '--:--',
-                    style: TextStyle(color: Colors.white, fontSize: 11),
+                    style: TextStyle(
+                      color: context.vistara.onBackground,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'PREVIEW PLAYER · NO VIDEO AVAILABLE',
                   style: TextStyle(
-                    color: AppTheme.muted,
+                    color: context.vistara.muted,
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.7,
