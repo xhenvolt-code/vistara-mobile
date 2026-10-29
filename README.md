@@ -63,6 +63,8 @@ flutter run --dart-define=VISTARA_API_BASE_URL=https://your-vistara-domain.examp
 fragment. Use HTTPS in production; secure authentication cookies are not sent
 over HTTP. If the define is omitted, the app opens in a clearly labelled
 offline preview and does not claim that authentication or live data works.
+`APP_BASE_URL` in the Next.js `.env.local` is a separate server setting; it
+does not automatically become a Flutter compile-time define.
 
 The client uses these service endpoints:
 
@@ -87,6 +89,12 @@ Build a 64-bit Android APK connected to the production service:
   -TargetPlatform android-arm64 `
   -ApiBaseUrl https://your-vistara-domain.example
 ```
+
+For repeated builds, configure `VISTARA_API_BASE_URL` in the shell or CI
+environment and omit `-ApiBaseUrl`. Release builds fail before compilation if
+no deployment origin is provided, preventing accidental offline-preview
+release installers. To intentionally package a preview, pass
+`-AllowOfflinePreview`.
 
 Every Android APK build automatically creates a Vistara-named APK in
 `build/app/outputs/flutter-apk/`, following

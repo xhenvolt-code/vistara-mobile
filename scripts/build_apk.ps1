@@ -6,7 +6,8 @@ param(
     [string]$TargetPlatform = "android-arm64",
     [ValidatePattern("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
     [string]$Channel,
-    [string]$ApiBaseUrl
+    [string]$ApiBaseUrl,
+    [switch]$AllowOfflinePreview
 )
 
 $previousChannel = $env:VISTARA_CHANNEL
@@ -26,6 +27,34 @@ try {
     $enteredProject = $true
     $env:VISTARA_CHANNEL = $Channel
 
+    if ([string]::IsNullOrWhiteSpace($ApiBaseUrl)) {
+        $ApiBaseUrl = $env:VISTARA_API_BASE_URL
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ApiBaseUrl)) {
+        if ($Mode -eq "release" -and -not $AllowOfflinePreview) {
+            throw (
+                "A release APK requires a deployed HTTPS Vistara origin. " +
+                "Pass -ApiBaseUrl or set VISTARA_API_BASE_URL. " +
+                "Use -AllowOfflinePreview only for an intentional preview build."
+            )
+        }
+    } else {
+        $apiUri = $null
+        if (-not [Uri]::TryCreate($ApiBaseUrl, [UriKind]::Absolute, [ref]$apiUri) -or
+            @("http", "https") -notcontains $apiUri.Scheme -or
+            [string]::IsNullOrWhiteSpace($apiUri.Host) -or
+            -not [string]::IsNullOrEmpty($apiUri.UserInfo) -or
+            $apiUri.Query -or
+            $apiUri.Fragment -or
+            $apiUri.AbsolutePath -ne "/") {
+            throw "ApiBaseUrl must be an HTTP(S) origin without a path, query, or credentials."
+        }
+        if ($Mode -eq "release" -and $apiUri.Scheme -ne "https") {
+            throw "Release APKs require an HTTPS Vistara origin."
+        }
+    }
+
     $flutterArguments = @(
         "build",
         "apk",
@@ -35,6 +64,10 @@ try {
     )
     if (-not [string]::IsNullOrWhiteSpace($ApiBaseUrl)) {
         $flutterArguments += "--dart-define=VISTARA_API_BASE_URL=$ApiBaseUrl"
+        $origin = [Uri]$ApiBaseUrl
+        Write-Output "Embedding Vistara API origin: $($origin.GetLeftPart([UriPartial]::Authority))"
+    } else {
+        Write-Warning "Building without a Vistara API origin; live data and account features will be unavailable."
     }
 
     & flutter @flutterArguments
