@@ -82,13 +82,33 @@ not cached; public catalogue and products use the server's short cache policy.
 Build a 64-bit Android APK connected to the production service:
 
 ```powershell
-flutter build apk --release --target-platform android-arm64 `
-  --dart-define=VISTARA_API_BASE_URL=https://your-vistara-domain.example
+.\scripts\build_apk.cmd `
+  -Mode release `
+  -TargetPlatform android-arm64 `
+  -ApiBaseUrl https://your-vistara-domain.example
 ```
 
-The APK is written to
-`build/app/outputs/flutter-apk/app-release.apk`. Use the deployment's public
-HTTPS origin; a build without the define is an offline preview build.
+Every Android APK build automatically creates a Vistara-named APK in
+`build/app/outputs/flutter-apk/`, following
+`vistara-[version]-[channel]-[revision].apk`. For example, the current stable
+release is `vistara-1.1.0-stable-3.apk`. The script removes Flutter's generic
+`app-release.apk` compatibility output after verifying the named APK, leaving
+the Vistara filename as the installer artifact. ABI-split or flavored builds
+add their variant identifier before `.apk`.
+
+The channel defaults to `stable` for release builds, `beta` for profile builds,
+and `development` for debug builds. Pass `-Channel` to override it, for
+example:
+
+```powershell
+.\scripts\build_apk.cmd -Mode release -Channel beta
+```
+
+The optional revision is the build number after `+` in `pubspec.yaml`. Use the
+deployment's public HTTPS origin; a build without `-ApiBaseUrl` is an offline
+preview build. Direct Flutter Gradle builds also generate the Vistara-named
+APK, but the Flutter CLI's generic compatibility output remains; use the
+script when you want only the versioned installer left in the output folder.
 
 The Android release build currently uses the local debug signing key for
 sideload testing. Before production distribution, configure a private Android
