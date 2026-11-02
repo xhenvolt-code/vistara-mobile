@@ -15,6 +15,9 @@ platform's secure storage.
 - Browse and search films published by Vistara with approved distribution
   rights and ready video assets.
 - View film artwork and metadata supplied by the Vistara service.
+- Play available films through Vistara's protected MP4 stream after signing in
+  with an active access pass. Access is checked by the server, and playback
+  supports range-based streaming.
 - Create an account, sign in, sign out, and request a password reset through
   the Vistara Neon Auth integration.
 - View account status, verified active access, and recent purchase history.
@@ -27,12 +30,11 @@ catalogue as preview content and disables live account and pass operations.
 
 ## Service-dependent features
 
-Playback and payment checkout are intentionally unavailable until the Vistara
-service has production-ready playback delivery and verified MarzPay checkout.
-The app must not be represented as streaming films or accepting payments until
-those service capabilities are released. The admin console remains the source
-of truth for film rights, publishing, product management, payments, and
-account administration.
+Payment checkout is not yet available in the Vistara consumer service, so the
+mobile app does not initiate charges or claim that a pass can be purchased.
+Sample/offline preview artwork is not a real listing and cannot be watched.
+The admin console remains the source of truth for film rights, publishing,
+product management, payments, and account administration.
 
 ## Requirements
 
@@ -73,6 +75,7 @@ The client uses these service endpoints:
 | `GET /api/mobile/catalogue` | Published rights-approved films with ready video assets |
 | `GET /api/mobile/access-products` | Available admin-managed passes |
 | `GET /api/mobile/session` | Authenticated profile, entitlement, and recent purchases |
+| `GET /api/movies/{slug}/playback` | Entitlement-protected MP4 stream with byte-range support |
 | `/api/auth/*` | Neon Auth email sign-in, sign-up, sign-out, and password reset |
 
 The Next.js deployment must have its existing database, Neon Auth, and public
@@ -99,7 +102,7 @@ release installers. To intentionally package a preview, pass
 Every Android APK build automatically creates a Vistara-named APK in
 `build/app/outputs/flutter-apk/`, following
 `vistara-[version]-[channel]-[revision].apk`. For example, the current stable
-release is `vistara-1.1.0-stable-3.apk`. The script removes Flutter's generic
+release is `vistara-1.2.0-stable-4.apk`. The script removes Flutter's generic
 `app-release.apk` compatibility output after verifying the named APK, leaving
 the Vistara filename as the installer artifact. ABI-split or flavored builds
 add their variant identifier before `.apk`.
@@ -113,10 +116,12 @@ example:
 ```
 
 The optional revision is the build number after `+` in `pubspec.yaml`. Use the
-deployment's public HTTPS origin; a build without `-ApiBaseUrl` is an offline
-preview build. Direct Flutter Gradle builds also generate the Vistara-named
-APK, but the Flutter CLI's generic compatibility output remains; use the
-script when you want only the versioned installer left in the output folder.
+deployment's public HTTPS origin. Debug/profile builds without `-ApiBaseUrl`
+remain offline previews; release builds require an origin unless
+`-AllowOfflinePreview` is explicitly supplied. Direct Flutter Gradle builds
+also generate the Vistara-named APK, but the Flutter CLI's generic
+compatibility output remains; use the script when you want only the
+versioned installer left in the output folder.
 
 The Android release build currently uses the local debug signing key for
 sideload testing. Before production distribution, configure a private Android

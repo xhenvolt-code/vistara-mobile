@@ -21,6 +21,9 @@ void main() {
                 'slug': 'night-road',
                 'title': 'Night Road',
                 'synopsis': 'A journey home.',
+                'director': 'A. Director',
+                'cast': ['Actor One', 'Actor Two'],
+                'contentRating': 'PG-13',
                 'posterUrl': 'https://images.example/poster.jpg',
                 'backdropUrl': 'https://images.example/backdrop.jpg',
                 'releaseYear': 2026,
@@ -46,6 +49,9 @@ void main() {
     expect(movies.single.title, 'Night Road');
     expect(movies.single.year, 2026);
     expect(movies.single.genre, 'Drama');
+    expect(movies.single.director, 'A. Director');
+    expect(movies.single.cast, ['Actor One', 'Actor Two']);
+    expect(movies.single.contentRating, 'PG-13');
     expect(movies.single.posterUrl, 'https://images.example/poster.jpg');
     expect(movies.single.isFeatured, isTrue);
     expect(movies.single.isSample, isFalse);
@@ -79,6 +85,45 @@ void main() {
     expect(products.single, isA<AccessProduct>());
     expect(products.single.priceUgx, 4000);
     expect(products.single.durationDays, 7);
+  });
+
+  test('playback URL and headers use the protected, authenticated endpoint', () async {
+    final store = _MemorySessionStore()
+      ..value = jsonEncode({
+        'origin': 'https://vistara.example',
+        'cookies': {
+          'vistara.session': {'value': 'opaque-token', 'secure': true},
+        },
+      });
+    final api = VistaraApi(
+      baseUrl: 'https://vistara.example',
+      sessionStore: store,
+    );
+
+    expect(
+      api.playbackUri('night-road'),
+      Uri.parse('https://vistara.example/api/movies/night-road/playback'),
+    );
+    expect(await api.playbackHeaders(), {
+      'Accept': 'video/mp4',
+      'Cookie': 'vistara.session=opaque-token',
+    });
+  });
+
+  test('playback requires an authenticated session cookie', () async {
+    final api = VistaraApi(
+      baseUrl: 'https://vistara.example',
+      sessionStore: _MemorySessionStore(),
+    );
+
+    await expectLater(
+      api.playbackHeaders(),
+      throwsA(
+        isA<VistaraApiException>()
+            .having((error) => error.statusCode, 'status code', 401)
+            .having((error) => error.message, 'message', 'Sign in to watch this title.'),
+      ),
+    );
   });
 
   test(
@@ -172,6 +217,34 @@ void main() {
       api.restoreSession(),
       throwsA(isA<VistaraApiException>()),
     );
+    expect(store.value, isNull);
+  });
+
+  test('expired Set-Cookie attributes revoke the saved session', () async {
+    final store = _MemorySessionStore()
+      ..value = jsonEncode({
+        'origin': 'https://vistara.example',
+        'cookies': {
+          'vistara.session': {'value': 'expired', 'secure': true},
+        },
+      });
+    final api = VistaraApi(
+      baseUrl: 'https://vistara.example',
+      sessionStore: store,
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode({'products': []}),
+          200,
+          headers: {
+            'set-cookie':
+                'vistara.session=; Path=/; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure',
+          },
+        ),
+      ),
+    );
+
+    await api.loadAccessProducts();
+
     expect(store.value, isNull);
   });
 

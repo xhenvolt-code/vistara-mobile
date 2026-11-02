@@ -3,6 +3,15 @@
 All notable releases of Vistara Mobile are recorded here. Versions follow the
 policy in [VERSIONING.md](VERSIONING.md).
 
+## [1.2.0] - 2026-11-02
+
+- Add authenticated MP4 playback through Vistara's entitlement-protected
+  byte-range streaming endpoint.
+- Require a signed-in account and active access pass before starting playback.
+- Add in-player playback controls and access/sign-in recovery actions.
+- Update mobile catalogue and release documentation to reflect the current
+  Next.js service capabilities.
+
 ## [1.1.0] - 2026-10-28
 
 - Add the Vistara violet V launcher icon and in-app brand mark.

@@ -170,8 +170,10 @@ class _AppShellState extends State<AppShell> {
             children: [
               HomeScreen(
                 onSignIn: _openAccount,
+                onRequireSignIn: _openAccount,
                 onExplore: () => setState(() => _selectedIndex = 1),
                 onViewPasses: () => setState(() => _selectedIndex = 2),
+                api: _api,
                 movies: _movies,
                 isPreview: _isPreview,
                 isLoading: _catalogueLoading,
@@ -181,8 +183,10 @@ class _AppShellState extends State<AppShell> {
               ),
               DiscoverScreen(
                 onSignIn: _openAccount,
+                onRequireSignIn: _openAccount,
                 onViewPasses: () => setState(() => _selectedIndex = 2),
                 onSearch: () => setState(() => _selectedIndex = 1),
+                api: _api,
                 movies: _movies,
                 isPreview: _isPreview,
                 error: _catalogueError,

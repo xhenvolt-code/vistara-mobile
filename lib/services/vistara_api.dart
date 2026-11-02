@@ -98,6 +98,23 @@ class VistaraApi {
     }
   }
 
+  Uri playbackUri(String movieSlug) {
+    final escapedSlug = Uri.encodeComponent(movieSlug);
+    return _requireBaseUri().resolve('/api/movies/$escapedSlug/playback');
+  }
+
+  Future<Map<String, String>> playbackHeaders() async {
+    final cookie = await _readCookieHeader();
+    if (cookie.isEmpty) {
+      throw const VistaraApiException(
+        'Sign in to watch this title.',
+        statusCode: 401,
+      );
+    }
+
+    return {'Accept': 'video/mp4', 'Cookie': cookie};
+  }
+
   Future<AccountSession> restoreSession() async {
     try {
       final response = await _request('GET', '/api/mobile/session');
@@ -359,18 +376,21 @@ class VistaraApi {
         }),
       );
       final maxAge = int.tryParse(attributes['max-age'] ?? '');
+      final expiresAt = maxAge != null
+          ? DateTime.now().add(Duration(seconds: maxAge)).millisecondsSinceEpoch
+          : _parseCookieExpiry(attributes['expires'])?.millisecondsSinceEpoch;
 
-      if (maxAge != null && maxAge <= 0) {
+      if ((maxAge != null && maxAge <= 0) ||
+          (expiresAt != null &&
+              expiresAt <= DateTime.now().millisecondsSinceEpoch)) {
         cookies.remove(name);
       } else {
-        cookies[name] = {
+        final cookie = <String, Object?>{
           'value': value,
           'secure': attributes.containsKey('secure'),
-          if (maxAge != null)
-            'expiresAt': DateTime.now()
-                .add(Duration(seconds: maxAge))
-                .millisecondsSinceEpoch,
         };
+        if (expiresAt != null) cookie['expiresAt'] = expiresAt;
+        cookies[name] = cookie;
       }
     }
 
@@ -382,6 +402,41 @@ class VistaraApi {
       );
     }
   }
+}
+
+DateTime? _parseCookieExpiry(String? value) {
+  if (value == null || value.trim().isEmpty) return null;
+
+  final parsed = DateTime.tryParse(value);
+  if (parsed != null) return parsed.toUtc();
+
+  final match = RegExp(
+    r'^(?:[A-Za-z]{3},\s*)?(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})\s+(\d{2}:\d{2}:\d{2})\s+GMT$',
+    caseSensitive: false,
+  ).firstMatch(value.trim());
+  if (match == null) return null;
+
+  const months = {
+    'jan': '01',
+    'feb': '02',
+    'mar': '03',
+    'apr': '04',
+    'may': '05',
+    'jun': '06',
+    'jul': '07',
+    'aug': '08',
+    'sep': '09',
+    'oct': '10',
+    'nov': '11',
+    'dec': '12',
+  };
+  final month = months[match.group(2)!.toLowerCase()];
+  if (month == null) return null;
+
+  return DateTime.tryParse(
+    '${match.group(3)}-$month-${match.group(1)!.padLeft(2, '0')}'
+    'T${match.group(4)}Z',
+  );
 }
 
 abstract interface class VistaraSessionStore {

@@ -10,6 +10,9 @@ class Movie {
     this.posterUrl,
     this.backdropUrl,
     this.synopsis,
+    this.director,
+    this.cast = const [],
+    this.contentRating,
     this.runtimeMinutes,
     this.language,
     this.isFeatured = false,
@@ -43,6 +46,9 @@ class Movie {
     final posterUrlValue = json['posterUrl'];
     final backdropUrlValue = json['backdropUrl'];
     final synopsisValue = json['synopsis'];
+    final directorValue = json['director'];
+    final castValue = json['cast'];
+    final contentRatingValue = json['contentRating'];
     final languageValue = json['language'];
     final featuredValue = json['isFeatured'];
 
@@ -55,6 +61,11 @@ class Movie {
       posterUrl: posterUrlValue is String ? posterUrlValue : null,
       backdropUrl: backdropUrlValue is String ? backdropUrlValue : null,
       synopsis: synopsisValue is String ? synopsisValue : null,
+      director: directorValue is String ? directorValue : null,
+      cast: castValue is List
+          ? castValue.whereType<String>().toList(growable: false)
+          : const [],
+      contentRating: contentRatingValue is String ? contentRatingValue : null,
       runtimeMinutes: runtimeValue is int ? runtimeValue : null,
       language: languageValue is String ? languageValue : null,
       isFeatured: featuredValue is bool && featuredValue,
@@ -71,6 +82,9 @@ class Movie {
   final String? posterUrl;
   final String? backdropUrl;
   final String? synopsis;
+  final String? director;
+  final List<String> cast;
+  final String? contentRating;
   final int? runtimeMinutes;
   final String? language;
   final bool isFeatured;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/movie.dart';
+import '../services/vistara_api.dart';
 import '../theme/app_theme.dart';
 import '../widgets/movie_image.dart';
 import '../widgets/movie_poster_card.dart';
@@ -10,8 +11,10 @@ import 'movie_details_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     required this.onSignIn,
+    required this.onRequireSignIn,
     required this.onExplore,
     required this.onViewPasses,
+    required this.api,
     required this.movies,
     required this.isPreview,
     required this.isLoading,
@@ -22,8 +25,10 @@ class HomeScreen extends StatefulWidget {
   });
 
   final VoidCallback onSignIn;
+  final Future<void> Function() onRequireSignIn;
   final VoidCallback onExplore;
   final VoidCallback onViewPasses;
+  final VistaraApi api;
   final List<Movie> movies;
   final bool isPreview;
   final bool isLoading;
@@ -52,6 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
           movie: movie,
           catalogue: widget.movies,
           onViewPasses: widget.onViewPasses,
+          api: widget.api,
+          isPreview: widget.isPreview,
+          onRequireSignIn: widget.onRequireSignIn,
         ),
       ),
     );

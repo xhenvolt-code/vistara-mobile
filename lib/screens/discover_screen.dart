@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/demo_catalogue.dart';
 import '../models/movie.dart';
+import '../services/vistara_api.dart';
 import '../theme/app_theme.dart';
 import '../widgets/movie_poster_card.dart';
 import '../widgets/preview_notice.dart';
@@ -11,7 +12,9 @@ import 'movie_details_screen.dart';
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({
     required this.onSignIn,
+    required this.onRequireSignIn,
     required this.onViewPasses,
+    required this.api,
     required this.movies,
     required this.isPreview,
     this.onSearch,
@@ -22,7 +25,9 @@ class DiscoverScreen extends StatefulWidget {
   });
 
   final VoidCallback onSignIn;
+  final Future<void> Function() onRequireSignIn;
   final VoidCallback onViewPasses;
+  final VistaraApi api;
   final VoidCallback? onSearch;
   final List<Movie> movies;
   final bool isPreview;
@@ -44,6 +49,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           movie: movie,
           catalogue: widget.movies,
           onViewPasses: widget.onViewPasses,
+          api: widget.api,
+          isPreview: widget.isPreview,
+          onRequireSignIn: widget.onRequireSignIn,
         ),
       ),
     );

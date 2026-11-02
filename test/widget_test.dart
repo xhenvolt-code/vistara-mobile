@@ -1,7 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:vistara_mobile/models/movie.dart';
 import 'package:vistara_mobile/main.dart';
+import 'package:vistara_mobile/screens/movie_details_screen.dart';
+import 'package:vistara_mobile/services/vistara_api.dart';
+import 'package:vistara_mobile/theme/app_theme.dart';
 
 void main() {
   testWidgets('application follows the operating system brightness', (
@@ -60,7 +67,7 @@ void main() {
     expect(find.text('UGX 1,500'), findsNothing);
   });
 
-  testWidgets('movie detail clearly states that playback is unavailable', (
+  testWidgets('sample movie detail clearly identifies preview-only artwork', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1000);
@@ -77,19 +84,117 @@ void main() {
     await tester.tap(firstMovie);
     await tester.pumpAndSettle();
 
-    expect(find.text('Playback not available'), findsOneWidget);
-    expect(find.text('Playback unavailable'), findsOneWidget);
-
-    await tester.tap(find.text('Playback unavailable'));
-    await tester.pumpAndSettle();
-    expect(find.text('PREVIEW PLAYER · NO VIDEO AVAILABLE'), findsOneWidget);
+    expect(find.text('Preview only'), findsNWidgets(2));
     expect(
       find.text(
-        'No video is attached to this sample listing: '
-        'Sample title 01.',
+        'This is template sample artwork. No film, rights '
+        'approval, or playback asset is attached to this preview listing.',
       ),
       findsOneWidget,
     );
+    final previewButton = tester.widget<FilledButton>(
+      find.ancestor(
+        of: find.text('Preview only').first,
+        matching: find.byType(FilledButton),
+      ),
+    );
+    expect(previewButton.onPressed, isNull);
+  });
+
+  testWidgets('protected playback directs signed-out viewers to sign in', (
+    tester,
+  ) async {
+    final api = VistaraApi(
+      baseUrl: 'https://vistara.example',
+      sessionStore: _MemorySessionStore(),
+      client: MockClient(
+        (_) async => http.Response(jsonEncode({'error': 'Unauthorized'}), 401),
+      ),
+    );
+    final movie = Movie(
+      id: 'film-1',
+      slug: 'night-road',
+      title: 'Night Road',
+      year: 2026,
+      genre: 'Drama',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: MovieDetailsScreen(
+          movie: movie,
+          catalogue: [movie],
+          onViewPasses: () {},
+          api: api,
+          isPreview: false,
+          onRequireSignIn: () async {},
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Watch film'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unable to play film'), findsOneWidget);
+    expect(find.text('Sign in to watch this title.'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+  });
+
+  testWidgets('protected playback directs viewers without a pass to passes', (
+    tester,
+  ) async {
+    final api = VistaraApi(
+      baseUrl: 'https://vistara.example',
+      sessionStore: _MemorySessionStore(),
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'user': {
+              'id': 'viewer-1',
+              'email': 'viewer@example.com',
+              'name': 'Viewer',
+              'accountStatus': 'ACTIVE',
+            },
+            'entitlement': null,
+            'purchases': [],
+          }),
+          200,
+        ),
+      ),
+    );
+    final movie = Movie(
+      id: 'film-1',
+      slug: 'night-road',
+      title: 'Night Road',
+      year: 2026,
+      genre: 'Drama',
+    );
+    var openedPasses = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: MovieDetailsScreen(
+          movie: movie,
+          catalogue: [movie],
+          onViewPasses: () => openedPasses = true,
+          api: api,
+          isPreview: false,
+          onRequireSignIn: () async {},
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Watch film'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Access pass required'), findsOneWidget);
+    expect(find.text('An active Vistara access pass is required to watch.'),
+        findsOneWidget);
+    await tester.tap(find.text('View access passes'));
+    await tester.pumpAndSettle();
+    expect(openedPasses, isTrue);
   });
 
   testWidgets('account form does not claim to authenticate', (tester) async {
@@ -100,4 +205,15 @@ void main() {
     expect(find.text('Welcome back'), findsOneWidget);
     expect(find.text('Vistara server not configured'), findsOneWidget);
   });
+}
+
+class _MemorySessionStore implements VistaraSessionStore {
+  @override
+  Future<String?> read() async => null;
+
+  @override
+  Future<void> write(String value) async {}
+
+  @override
+  Future<void> delete() async {}
 }

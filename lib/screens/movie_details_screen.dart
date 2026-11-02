@@ -1,23 +1,48 @@
 import 'package:flutter/material.dart';
 
 import '../models/movie.dart';
+import '../services/vistara_api.dart';
 import '../theme/app_theme.dart';
 import '../widgets/movie_image.dart';
 import '../widgets/movie_poster_card.dart';
 import '../widgets/preview_notice.dart';
 import 'player_screen.dart';
 
+class _MetadataLine extends StatelessWidget {
+  const _MetadataLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        '$label · $value',
+        style: TextStyle(color: context.vistara.muted, fontSize: 13),
+      ),
+    );
+  }
+}
+
 class MovieDetailsScreen extends StatefulWidget {
   const MovieDetailsScreen({
     required this.movie,
     required this.catalogue,
     required this.onViewPasses,
+    required this.api,
+    required this.isPreview,
+    required this.onRequireSignIn,
     super.key,
   });
 
   final Movie movie;
   final List<Movie> catalogue;
   final VoidCallback onViewPasses;
+  final VistaraApi api;
+  final bool isPreview;
+  final Future<void> Function() onRequireSignIn;
 
   @override
   State<MovieDetailsScreen> createState() => _MovieDetailsScreenState();
@@ -121,30 +146,54 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                   '${movie.language == null || movie.language!.isEmpty ? '' : '  ·  ${movie.language}'}',
                   style: TextStyle(color: context.vistara.muted, fontSize: 13),
                 ),
+                if (movie.contentRating != null ||
+                    movie.director != null ||
+                    movie.cast.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  if (movie.contentRating case final rating?)
+                    _MetadataLine(label: 'Rating', value: rating),
+                  if (movie.director case final director?)
+                    _MetadataLine(label: 'Director', value: director),
+                  if (movie.cast.isNotEmpty)
+                    _MetadataLine(label: 'Cast', value: movie.cast.join(', ')),
+                ],
                 const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => PlayerScreen(movie: movie),
-                        ),
-                      );
-                    },
+                    onPressed: widget.isPreview || movie.isSample
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => PlayerScreen(
+                                  movie: movie,
+                                  api: widget.api,
+                                  onRequireSignIn: widget.onRequireSignIn,
+                                  onViewPasses: widget.onViewPasses,
+                                ),
+                              ),
+                            );
+                          },
                     icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('Playback unavailable'),
+                    label: Text(
+                      widget.isPreview || movie.isSample
+                          ? 'Preview only'
+                          : 'Watch film',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
                 PreviewNotice(
-                  title: 'Playback not available',
-                  message: movie.isSample
+                  title: widget.isPreview || movie.isSample
+                      ? 'Preview only'
+                      : 'Vistara playback',
+                  message: widget.isPreview || movie.isSample
                       ? 'This is template sample artwork. No film, rights '
                             'approval, or playback asset is attached to this '
                             'preview listing.'
-                      : 'Playback is not yet available for this title. '
-                            'Please check back later.',
+                      : 'Watching requires an active Vistara access pass. '
+                            'Playback is securely delivered by Vistara.',
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -213,6 +262,9 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                                     movie: relatedMovie,
                                     catalogue: widget.catalogue,
                                     onViewPasses: widget.onViewPasses,
+                                    api: widget.api,
+                                    isPreview: widget.isPreview,
+                                    onRequireSignIn: widget.onRequireSignIn,
                                   ),
                                 ),
                               );
