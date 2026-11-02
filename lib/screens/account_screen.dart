@@ -57,17 +57,18 @@ class AccountScreen extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 28),
-          const _SectionTitle('Your access'),
+          const _SectionTitle('Your subscription'),
           const SizedBox(height: 10),
           if (entitlement == null)
             const _InformationCard(
               icon: Icons.lock_outline,
-              title: 'No active access pass',
-              subtitle: 'Active passes appear here after payment is verified.',
+              title: 'No active subscription',
+              subtitle:
+                  'Your viewing access appears here after payment is verified.',
             )
           else
             _InformationCard(
-              icon: Icons.confirmation_number_outlined,
+              icon: Icons.subscriptions_outlined,
               title: entitlement.productName,
               subtitle: 'Active until ${_formatDate(entitlement.expiresAt)}',
             ),
@@ -78,7 +79,7 @@ class AccountScreen extends StatelessWidget {
             const _InformationCard(
               icon: Icons.receipt_long_outlined,
               title: 'No purchases yet',
-              subtitle: 'Verified pass purchases will appear here.',
+              subtitle: 'Verified subscription payments will appear here.',
             )
           else
             ...session.purchases.map(

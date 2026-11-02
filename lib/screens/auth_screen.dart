@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../services/vistara_api.dart';
 import '../theme/app_theme.dart';
@@ -15,6 +16,13 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  static const _googleServerClientId = String.fromEnvironment(
+    'VISTARA_GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: '516759701042-1j43chkqtgl8hf49j0cql8gf34sun3e9.apps.googleusercontent.com',
+  );
+  static final Future<void> _googleSignInInitialization = GoogleSignIn.instance
+      .initialize(serverClientId: _googleServerClientId);
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -24,6 +32,48 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isBusy = false;
   String? _error;
   String? _message;
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isBusy = true;
+      _error = null;
+      _message = null;
+    });
+
+    try {
+      await _googleSignInInitialization;
+      final googleSignIn = GoogleSignIn.instance;
+      if (!googleSignIn.supportsAuthenticate()) {
+        throw const VistaraApiException(
+          'Google sign-in is not available on this device.',
+        );
+      }
+
+      final account = await googleSignIn.authenticate();
+      final idToken = account.authentication.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw const VistaraApiException(
+          'Google did not return an identity token. Check the Google '
+          'sign-in configuration and try again.',
+        );
+      }
+
+      final session = await widget.api.signInWithGoogle(idToken: idToken);
+      if (mounted) Navigator.of(context).pop(session);
+    } on GoogleSignInException catch (error) {
+      if (!mounted || error.code == GoogleSignInExceptionCode.canceled) return;
+      setState(() {
+        _error =
+            error.description ??
+            'Google sign-in could not be completed. Check the app’s Google '
+                'OAuth client and Android signing certificate configuration.';
+      });
+    } on VistaraApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -248,6 +298,25 @@ class _AuthScreenState extends State<AuthScreen> {
                               message:
                                   'Use a connected Vistara API origin to '
                                   'enable account sign-in and password recovery.',
+                            ),
+                          ],
+                          if (!_isResettingPassword) ...[
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                onPressed: _isBusy || !widget.api.isConfigured
+                                    ? null
+                                    : _signInWithGoogle,
+                                icon: const Icon(Icons.account_circle_outlined),
+                                label: const Text('Continue with Google'),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'or continue with email',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: context.vistara.muted),
                             ),
                           ],
                           const SizedBox(height: 18),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:http/http.dart' as http;
 import '../models/access_product.dart';
 import '../models/account_session.dart';
 import '../models/movie.dart';
+import '../models/subscription_purchase.dart';
 
 class VistaraApi {
   VistaraApi({
@@ -83,23 +85,40 @@ class VistaraApi {
     final response = await _request('GET', '/api/mobile/access-products');
     final products = response['products'];
     if (products is! List) {
-      throw const VistaraApiException('The access pass response is invalid.');
+      throw const VistaraApiException(
+        'The subscription plan response is invalid.',
+      );
     }
 
     try {
       return products
           .map((product) {
             if (product is! Map<String, dynamic>) {
-              throw const VistaraApiException('An access pass is invalid.');
+              throw const VistaraApiException(
+                'A subscription plan is invalid.',
+              );
             }
             return AccessProduct.fromJson(product);
           })
           .toList(growable: false);
     } on FormatException {
       throw const VistaraApiException(
-        'Vistara returned invalid access pass details. Try again later.',
+        'Vistara returned invalid subscription plan details. Try again later.',
       );
     }
+  }
+
+  Future<SubscriptionPurchase> createSubscriptionPurchase({
+    required String productId,
+    required String phoneNumber,
+  }) async {
+    final response = await _request(
+      'POST',
+      '/api/payments/marzpay/collections',
+      body: {'productId': productId, 'phoneNumber': phoneNumber.trim()},
+      idempotencyKey: _createUuidV4(),
+    );
+    return SubscriptionPurchase.fromJson(response);
   }
 
   Uri playbackUri(String movieSlug) {
@@ -141,6 +160,24 @@ class VistaraApi {
       'POST',
       '/api/auth/sign-in/email',
       body: {'email': email.trim().toLowerCase(), 'password': password},
+    );
+    return restoreSession();
+  }
+
+  Future<AccountSession> signInWithGoogle({required String idToken}) async {
+    if (idToken.trim().isEmpty) {
+      throw const VistaraApiException(
+        'Google did not return an identity token. Try again.',
+      );
+    }
+
+    await _request(
+      'POST',
+      '/api/auth/sign-in/social',
+      body: {
+        'provider': 'google',
+        'idToken': {'token': idToken},
+      },
     );
     return restoreSession();
   }
@@ -196,11 +233,15 @@ class VistaraApi {
     String method,
     String path, {
     Map<String, Object?>? body,
+    String? idempotencyKey,
   }) async {
     final baseUri = _requireBaseUri();
     final request = http.Request(method, baseUri.resolve(path))
       ..headers['Accept'] = 'application/json'
       ..headers['Origin'] = baseUri.origin;
+    if (idempotencyKey != null) {
+      request.headers['Idempotency-Key'] = idempotencyKey;
+    }
     final cookieHeader = await _readCookieHeader();
     if (cookieHeader.isNotEmpty) request.headers['Cookie'] = cookieHeader;
     if (body != null) {
@@ -500,4 +541,18 @@ class VistaraApiException implements Exception {
 
   @override
   String toString() => message;
+}
+
+String _createUuidV4() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  final hex = bytes
+      .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+      .join();
+
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+      '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
+      '${hex.substring(20)}';
 }

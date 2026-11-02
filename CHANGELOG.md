@@ -3,6 +3,17 @@
 All notable releases of Vistara Mobile are recorded here. Versions follow the
 policy in [VERSIONING.md](VERSIONING.md).
 
+## [1.3.0] - 2026-11-02
+
+- Add native Google sign-in using Vistara Neon Auth's Google ID-token flow.
+- Keep email sign-in, account creation, and password reset available alongside
+  Google sign-in.
+- Show admin-managed daily, weekly, bi-weekly, monthly, and custom subscription
+  terms in place of access-pass messaging.
+- Initiate authenticated MarzPay mobile-money collections with idempotency
+  keys and await server-verified payment before access is granted.
+- Clarify that MarzPay subscriptions are prepaid terms and do not auto-renew.
+
 ## [1.2.1] - 2026-11-02
 
 - Configure `https://vistara-main.vercel.app` as the default API origin for

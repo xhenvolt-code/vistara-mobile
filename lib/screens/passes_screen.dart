@@ -1,31 +1,71 @@
 import 'package:flutter/material.dart';
 
 import '../models/access_product.dart';
+import '../services/vistara_api.dart';
 import '../theme/app_theme.dart';
 import '../widgets/preview_notice.dart';
+import '../widgets/subscription_checkout_sheet.dart';
 import '../widgets/vistara_header.dart';
 
 class PassesScreen extends StatelessWidget {
   const PassesScreen({
     required this.products,
+    required this.api,
     required this.isConfigured,
+    required this.isSignedIn,
     required this.isLoading,
     this.error,
     this.onRetry,
     this.onSignIn,
+    this.onRefreshAccount,
+    this.onOpenAccount,
     this.onSearch,
     this.displayName,
     super.key,
   });
 
   final List<AccessProduct> products;
+  final VistaraApi api;
   final bool isConfigured;
+  final bool isSignedIn;
   final bool isLoading;
   final String? error;
   final VoidCallback? onRetry;
-  final VoidCallback? onSignIn;
+  final Future<void> Function()? onSignIn;
+  final Future<void> Function()? onRefreshAccount;
+  final Future<void> Function()? onOpenAccount;
   final VoidCallback? onSearch;
   final String? displayName;
+
+  Future<void> _startSubscription(
+    BuildContext context,
+    AccessProduct product,
+  ) async {
+    if (!isSignedIn) {
+      await onSignIn?.call();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sign in before starting a subscription.'),
+          ),
+        );
+      }
+      return;
+    }
+    if (onRefreshAccount == null || onOpenAccount == null) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => SubscriptionCheckoutSheet(
+        api: api,
+        product: product,
+        onRefreshAccount: onRefreshAccount!,
+        onOpenAccount: onOpenAccount!,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +74,7 @@ class PassesScreen extends StatelessWidget {
       children: [
         if (onSignIn != null)
           VistaraHeader(
-            onSignIn: onSignIn!,
+            onSignIn: () async => onSignIn?.call(),
             onSearch: onSearch,
             displayName: displayName,
           ),
@@ -43,15 +83,15 @@ class PassesScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _Eyebrow('SIMPLE VIEWING ACCESS'),
+              const _Eyebrow('FLEXIBLE VIEWING PLANS'),
               const SizedBox(height: 8),
               Text(
-                'Choose your\nmovie-night pass.',
+                'Choose your\nsubscription.',
                 style: Theme.of(context).textTheme.headlineLarge,
               ),
               const SizedBox(height: 10),
               Text(
-                'Available passes and prices are managed by the Vistara team.',
+                'Choose a viewing term and pay securely with MarzPay mobile money.',
                 style: TextStyle(color: context.vistara.muted, height: 1.5),
               ),
               const SizedBox(height: 24),
@@ -68,23 +108,25 @@ class PassesScreen extends StatelessWidget {
                 const PreviewNotice(
                   title: 'Vistara server not configured',
                   message:
-                      'Connect to a Vistara API origin to load live access '
-                      'products. Passes and prices are not fabricated in '
+                      'Connect to a Vistara API origin to load live subscription '
+                      'plans. Plans and prices are not fabricated in '
                       'offline preview mode.',
                 )
               else if (products.isEmpty)
                 const _EmptyPasses()
               else
-                _ProductList(products: products),
+                _ProductList(
+                  products: products,
+                  onSubscribe: (product) =>
+                      _startSubscription(context, product),
+                ),
               const SizedBox(height: 22),
-              PreviewNotice(
-                title: 'Checkout not enabled',
-                message: isConfigured
-                    ? 'MarzPay checkout is not yet enabled on Vistara. '
-                          'Passes cannot be purchased in the app.'
-                    : 'Passes are visible when the mobile app is connected '
-                          'to Vistara. MarzPay checkout is not enabled.',
-              ),
+              if (isConfigured && products.isNotEmpty)
+                const Text(
+                  'Subscriptions are prepaid for the displayed term and do '
+                  'not auto-renew. Payment is confirmed by Vistara before '
+                  'viewing access is granted.',
+                ),
               const SizedBox(height: 22),
               Text(
                 'Stories worth staying in for.  ·  Uganda · UGX',
@@ -99,9 +141,10 @@ class PassesScreen extends StatelessWidget {
 }
 
 class _ProductList extends StatelessWidget {
-  const _ProductList({required this.products});
+  const _ProductList({required this.products, required this.onSubscribe});
 
   final List<AccessProduct> products;
+  final ValueChanged<AccessProduct> onSubscribe;
 
   @override
   Widget build(BuildContext context) {
@@ -112,60 +155,70 @@ class _ProductList extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 12),
               child: Padding(
                 padding: const EdgeInsets.all(18),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: context.vistara.accent.withValues(alpha: 0.13),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.confirmation_number_outlined,
-                        color: context.vistara.accent,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: context.vistara.accent.withValues(
+                              alpha: 0.13,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.subscriptions_outlined,
+                            color: context.vistara.accent,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.name,
+                                style: TextStyle(
+                                  color: context.vistara.onBackground,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${product.termLabel} · '
+                                '${product.durationDays} '
+                                '${product.durationDays == 1 ? 'day' : 'days'}',
+                                style: TextStyle(
+                                  color: context.vistara.muted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'UGX ${_formatAmount(product.priceUgx)}',
+                                style: TextStyle(
+                                  color: context.vistara.accent,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product.name,
-                            style: TextStyle(
-                              color: context.vistara.onBackground,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${product.durationDays} '
-                            '${product.durationDays == 1 ? 'day' : 'days'} '
-                            'of access',
-                            style: TextStyle(
-                              color: context.vistara.muted,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'UGX ${_formatAmount(product.priceUgx)}',
-                            style: TextStyle(
-                              color: context.vistara.accent,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => onSubscribe(product),
+                        child: const Text('Subscribe'),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.lock_outline,
-                      color: context.vistara.muted,
-                      size: 20,
                     ),
                   ],
                 ),
@@ -190,7 +243,7 @@ class _EmptyPasses extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        'No access passes are available right now. Please check back soon.',
+        'No subscription plans are available right now. Please check back soon.',
         style: TextStyle(color: context.vistara.muted, height: 1.5),
       ),
     );

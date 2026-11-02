@@ -192,7 +192,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       ? 'This is template sample artwork. No film, rights '
                             'approval, or playback asset is attached to this '
                             'preview listing.'
-                      : 'Watching requires an active Vistara access pass. '
+                      : 'Watching requires an active Vistara subscription. '
                             'Playback is securely delivered by Vistara.',
                 ),
                 const SizedBox(height: 24),
@@ -220,7 +220,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     Navigator.of(context).pop();
                     widget.onViewPasses();
                   },
-                  child: const Text('View available access passes'),
+                  child: const Text('View subscription plans'),
                 ),
                 if (relatedMovies.isNotEmpty) ...[
                   const SizedBox(height: 24),

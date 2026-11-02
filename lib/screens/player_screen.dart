@@ -72,7 +72,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           setState(() {
             _isLoading = false;
             _requiresPass = true;
-            _error = 'An active Vistara access pass is required to watch.';
+            _error = 'An active Vistara subscription is required to watch.';
           });
         }
         return;
@@ -109,7 +109,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         _error = error.statusCode == 401
             ? 'Sign in to watch this title.'
             : error.statusCode == 403
-            ? 'An active Vistara access pass is required to watch.'
+            ? 'An active Vistara subscription is required to watch.'
             : error.message;
       });
     } on PlatformException {
@@ -181,7 +181,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              _requiresPass ? 'Access pass required' : 'Unable to play film',
+              _requiresPass ? 'Subscription required' : 'Unable to play film',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge,
             ),
@@ -200,7 +200,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
             else if (_requiresPass)
               FilledButton(
                 onPressed: _openPasses,
-                child: const Text('View access passes'),
+                child: const Text('View subscription plans'),
               )
             else
               OutlinedButton(

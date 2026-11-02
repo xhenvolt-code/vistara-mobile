@@ -99,7 +99,62 @@ void main() {
     expect(products.single, isA<AccessProduct>());
     expect(products.single.priceUgx, 4000);
     expect(products.single.durationDays, 7);
+    expect(products.single.termLabel, 'Weekly');
   });
+
+  test(
+    'subscription payment uses authenticated MarzPay collection endpoint',
+    () async {
+      final store = _MemorySessionStore()
+        ..value = jsonEncode({
+          'origin': 'https://vistara.example',
+          'cookies': {
+            'vistara.session': {'value': 'opaque-session', 'secure': true},
+          },
+        });
+      final api = VistaraApi(
+        baseUrl: 'https://vistara.example',
+        sessionStore: store,
+        client: MockClient((request) async {
+          expect(request.method, 'POST');
+          expect(request.url.path, '/api/payments/marzpay/collections');
+          expect(request.headers['origin'], 'https://vistara.example');
+          expect(request.headers['cookie'], 'vistara.session=opaque-session');
+          expect(request.headers['content-type'], 'application/json');
+          expect(
+            request.headers['idempotency-key'],
+            matches(
+              RegExp(
+                r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-'
+                r'[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+              ),
+            ),
+          );
+          expect(jsonDecode(request.body), {
+            'productId': 'weekly-plan',
+            'phoneNumber': '+256700000000',
+          });
+          return http.Response(
+            jsonEncode({
+              'purchaseId': 'purchase-1',
+              'status': 'PENDING',
+              'message': 'Payment prompt requested.',
+            }),
+            201,
+          );
+        }),
+      );
+
+      final purchase = await api.createSubscriptionPurchase(
+        productId: 'weekly-plan',
+        phoneNumber: ' +256700000000 ',
+      );
+
+      expect(purchase.purchaseId, 'purchase-1');
+      expect(purchase.status, 'PENDING');
+      expect(purchase.message, 'Payment prompt requested.');
+    },
+  );
 
   test(
     'playback URL and headers use the protected, authenticated endpoint',
@@ -217,6 +272,77 @@ void main() {
       expect(store.value, contains('opaque-token'));
     },
   );
+
+  test(
+    'Google sign-in exchanges an ID token and restores the session',
+    () async {
+      final store = _MemorySessionStore();
+      var sessionRequestCount = 0;
+      final api = VistaraApi(
+        baseUrl: 'https://vistara.example',
+        sessionStore: store,
+        client: MockClient((request) async {
+          if (request.url.path == '/api/auth/sign-in/social') {
+            expect(request.headers['origin'], 'https://vistara.example');
+            expect(jsonDecode(request.body), {
+              'provider': 'google',
+              'idToken': {'token': 'google-id-token'},
+            });
+            return http.Response(
+              jsonEncode({'token': 'session-token'}),
+              200,
+              headers: {
+                'set-cookie':
+                    'vistara.session=opaque-token; Path=/; HttpOnly; Secure; '
+                    'SameSite=Lax',
+              },
+            );
+          }
+
+          expect(request.url.path, '/api/mobile/session');
+          expect(request.headers['cookie'], 'vistara.session=opaque-token');
+          sessionRequestCount++;
+          return http.Response(
+            jsonEncode({
+              'user': {
+                'id': 'google-user',
+                'email': 'viewer@example.com',
+                'name': 'Vistara Viewer',
+                'accountStatus': 'ACTIVE',
+              },
+              'entitlement': null,
+              'purchases': [],
+            }),
+            200,
+          );
+        }),
+      );
+
+      final session = await api.signInWithGoogle(idToken: 'google-id-token');
+
+      expect(session.user.id, 'google-user');
+      expect(sessionRequestCount, 1);
+      expect(store.value, contains('opaque-token'));
+    },
+  );
+
+  test('Google sign-in rejects an empty identity token', () async {
+    final api = VistaraApi(
+      baseUrl: 'https://vistara.example',
+      sessionStore: _MemorySessionStore(),
+    );
+
+    await expectLater(
+      api.signInWithGoogle(idToken: '  '),
+      throwsA(
+        isA<VistaraApiException>().having(
+          (error) => error.message,
+          'message',
+          'Google did not return an identity token. Try again.',
+        ),
+      ),
+    );
+  });
 
   test('expired sessions clear the local session cookie', () async {
     final store = _MemorySessionStore()

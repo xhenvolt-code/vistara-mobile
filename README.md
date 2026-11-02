@@ -2,7 +2,7 @@
 
 Vistara Mobile is the Flutter client for the Vistara film-discovery and
 account platform. It connects to the Vistara Next.js service for the
-rights-approved catalogue, managed access products, Neon-backed identity,
+rights-approved catalogue, managed subscription plans, Neon-backed identity,
 verified viewing entitlements, and purchase history.
 
 The client follows the device appearance setting and provides branded light
@@ -16,25 +16,33 @@ platform's secure storage.
   rights and ready video assets.
 - View film artwork and metadata supplied by the Vistara service.
 - Play available films through Vistara's protected MP4 stream after signing in
-  with an active access pass. Access is checked by the server, and playback
+  with an active subscription. Access is checked by the server, and playback
   supports range-based streaming.
 - Create an account, sign in, sign out, and request a password reset through
   the Vistara Neon Auth integration.
-- View account status, verified active access, and recent purchase history.
-- View access products and pricing managed in the Vistara admin console.
+- Sign in or create an account with Google through Neon Auth, alongside the
+  email-and-password options available on the Next.js application.
+- View account status, verified active subscriptions, and recent purchase history.
+- View subscription terms and pricing managed in the Vistara admin console.
+- Start a subscription payment using Uganda mobile money through MarzPay.
+  Viewing access is granted only after the Vistara server verifies payment.
 - Follow system light/dark appearance with a Violet Vistara identity.
 
-The client does not make up catalogue entries or pass prices in connected
-mode. When built without a service origin it clearly identifies the sample
-catalogue as preview content and disables live account and pass operations.
+The client does not make up catalogue entries or subscription prices in
+connected mode. When built without a service origin it clearly identifies the
+sample catalogue as preview content and disables live account and subscription
+operations.
 
 ## Service-dependent features
 
-Payment checkout is not yet available in the Vistara consumer service, so the
-mobile app does not initiate charges or claim that a pass can be purchased.
+MarzPay currently collects a one-time payment for a selected subscription
+term; automatic renewal is not supported. Daily, weekly, bi-weekly, monthly
+(30-day), and custom day durations can be configured by administrators.
 Sample/offline preview artwork is not a real listing and cannot be watched.
-The admin console remains the source of truth for film rights, publishing,
-product management, payments, and account administration.
+The app does not request camera, microphone, or location access because its
+current features do not need them. User-approved screen sharing is not yet
+available: it also requires an authenticated admin viewer and dedicated
+signaling and media transport.
 
 ## Requirements
 
@@ -71,15 +79,25 @@ over HTTP. To intentionally build an offline preview, use the APK script's
 `APP_BASE_URL` in the Next.js `.env.local` is a separate server setting; it
 does not automatically become a Flutter compile-time define.
 
+Google sign-in also requires the deployed Neon Auth Google provider to be
+configured. In Google Cloud, register an Android OAuth client for package
+`com.vistara.mobile` and the SHA-1 fingerprints of every signing certificate
+used (debug, sideload, and production/Play signing as applicable). The app
+uses the configured web OAuth client as its server client ID; override it for
+another deployment with
+`--dart-define=VISTARA_GOOGLE_SERVER_CLIENT_ID=<web-client-id>`. This client ID
+is public configuration, not a client secret.
+
 The client uses these service endpoints:
 
 | Endpoint | Purpose |
 | --- | --- |
 | `GET /api/mobile/catalogue` | Published rights-approved films with ready video assets |
-| `GET /api/mobile/access-products` | Available admin-managed passes |
+| `GET /api/mobile/access-products` | Available admin-managed subscription plans |
+| `POST /api/payments/marzpay/collections` | Start an authenticated MarzPay payment |
 | `GET /api/mobile/session` | Authenticated profile, entitlement, and recent purchases |
 | `GET /api/movies/{slug}/playback` | Entitlement-protected MP4 stream with byte-range support |
-| `/api/auth/*` | Neon Auth email sign-in, sign-up, sign-out, and password reset |
+| `/api/auth/*` | Neon Auth email/Google sign-in, sign-up, sign-out, and password reset |
 
 The Next.js deployment must have its existing database, Neon Auth, and public
 `APP_BASE_URL` settings configured. Mobile session responses are private and
@@ -104,7 +122,7 @@ package an offline preview without live data or account access, pass
 Every Android APK build automatically creates a Vistara-named APK in
 `build/app/outputs/flutter-apk/`, following
 `vistara-[version]-[channel]-[revision].apk`. For example, the current stable
-release is `vistara-1.2.1-stable-5.apk`. The script removes Flutter's generic
+release is `vistara-1.3.0-stable-6.apk`. The script removes Flutter's generic
 `app-release.apk` compatibility output after verifying the named APK, leaving
 the Vistara filename as the installer artifact. ABI-split or flavored builds
 add their variant identifier before `.apk`.
