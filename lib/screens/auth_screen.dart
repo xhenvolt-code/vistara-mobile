@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/vistara_api.dart';
 import '../theme/app_theme.dart';
@@ -16,13 +16,6 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  static const _googleServerClientId = String.fromEnvironment(
-    'VISTARA_GOOGLE_SERVER_CLIENT_ID',
-    defaultValue: '516759701042-1j43chkqtgl8hf49j0cql8gf34sun3e9.apps.googleusercontent.com',
-  );
-  static final Future<void> _googleSignInInitialization = GoogleSignIn.instance
-      .initialize(serverClientId: _googleServerClientId);
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -41,33 +34,16 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
-      await _googleSignInInitialization;
-      final googleSignIn = GoogleSignIn.instance;
-      if (!googleSignIn.supportsAuthenticate()) {
+      final authUri = await widget.api.startGoogleSignIn();
+      final launched = await launchUrl(
+        authUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
         throw const VistaraApiException(
-          'Google sign-in is not available on this device.',
+          'Unable to open Google sign-in in your browser. Try again.',
         );
       }
-
-      final account = await googleSignIn.authenticate();
-      final idToken = account.authentication.idToken;
-      if (idToken == null || idToken.isEmpty) {
-        throw const VistaraApiException(
-          'Google did not return an identity token. Check the Google '
-          'sign-in configuration and try again.',
-        );
-      }
-
-      final session = await widget.api.signInWithGoogle(idToken: idToken);
-      if (mounted) Navigator.of(context).pop(session);
-    } on GoogleSignInException catch (error) {
-      if (!mounted || error.code == GoogleSignInExceptionCode.canceled) return;
-      setState(() {
-        _error =
-            error.description ??
-            'Google sign-in could not be completed. Check the app’s Google '
-                'OAuth client and Android signing certificate configuration.';
-      });
     } on VistaraApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } finally {

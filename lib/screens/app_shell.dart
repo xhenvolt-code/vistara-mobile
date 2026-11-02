@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -23,7 +26,9 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  final AppLinks _appLinks = AppLinks();
   late final VistaraApi _api;
+  StreamSubscription<Uri>? _appLinkSubscription;
   int _selectedIndex = 0;
   late List<Movie> _movies;
   List<AccessProduct> _products = const [];
@@ -33,6 +38,8 @@ class _AppShellState extends State<AppShell> {
   String? _productsError;
   String? _sessionError;
   AccountSession? _session;
+  String? _handledAuthCallback;
+  bool _isHandlingAuthCallback = false;
 
   bool get _isPreview => !_api.isConfigured;
 
@@ -41,10 +48,72 @@ class _AppShellState extends State<AppShell> {
     super.initState();
     _api = widget.api ?? VistaraApi();
     _movies = _isPreview ? demoCatalogue : const [];
+    _appLinkSubscription = _appLinks.uriLinkStream.listen(
+      (uri) => unawaited(_handleAuthCallback(uri)),
+      onError: (Object error, StackTrace stackTrace) {
+        if (error is PlatformException && mounted) {
+          setState(() {
+            _sessionError =
+                'Unable to receive the Google sign-in response. Try again.';
+          });
+        }
+      },
+    );
+    unawaited(_handleInitialAppLink());
     if (_api.isConfigured) {
       _loadCatalogue();
       _loadAccessProducts();
       _restoreSession();
+    }
+  }
+
+  @override
+  void dispose() {
+    _appLinkSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleInitialAppLink() async {
+    try {
+      final uri = await _appLinks.getInitialLink();
+      if (uri != null) await _handleAuthCallback(uri);
+    } on PlatformException {
+      if (mounted) {
+        setState(() {
+          _sessionError =
+              'Unable to receive the Google sign-in response. Try again.';
+        });
+      }
+    }
+  }
+
+  Future<void> _handleAuthCallback(Uri uri) async {
+    if (uri.scheme != 'vistara' ||
+        uri.host != 'auth' ||
+        uri.path != '/callback' ||
+        _isHandlingAuthCallback ||
+        uri.toString() == _handledAuthCallback) {
+      return;
+    }
+
+    _isHandlingAuthCallback = true;
+    _handledAuthCallback = uri.toString();
+    try {
+      final session = await _api.completeGoogleSignIn(uri);
+      if (!mounted) return;
+      setState(() {
+        _session = session;
+        _sessionError = null;
+      });
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } on VistaraApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _sessionError = error.message);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } finally {
+      _isHandlingAuthCallback = false;
     }
   }
 

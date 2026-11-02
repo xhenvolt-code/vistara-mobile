@@ -3,6 +3,14 @@
 All notable releases of Vistara Mobile are recorded here. Versions follow the
 policy in [VERSIONING.md](VERSIONING.md).
 
+## [1.3.1] - 2026-11-02
+
+- Match the Next.js Google sign-in browser redirect instead of sending native
+  ID tokens to an unsupported Neon Auth exchange.
+- Add a secure app-link return and one-time, PKCE-protected Neon session
+  handoff.
+- Remove the Android-only Google OAuth client configuration requirement.
+
 ## [1.3.0] - 2026-11-02
 
 - Add native Google sign-in using Vistara Neon Auth's Google ID-token flow.

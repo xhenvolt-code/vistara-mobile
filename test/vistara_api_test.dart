@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -274,33 +275,61 @@ void main() {
   );
 
   test(
-    'Google sign-in exchanges an ID token and restores the session',
+    'Google sign-in follows the Neon browser flow and exchanges its handoff',
     () async {
       final store = _MemorySessionStore();
       var sessionRequestCount = 0;
+      String? state;
+      String? codeChallenge;
+      final ticket = List<String>.filled(43, 'A').join();
       final api = VistaraApi(
         baseUrl: 'https://vistara.example',
         sessionStore: store,
         client: MockClient((request) async {
           if (request.url.path == '/api/auth/sign-in/social') {
             expect(request.headers['origin'], 'https://vistara.example');
+            final body = jsonDecode(request.body) as Map<String, dynamic>;
+            expect(body['provider'], 'google');
+            expect(body['disableRedirect'], isTrue);
+            final callbackUri = Uri.parse(body['callbackURL'] as String);
+            expect(callbackUri.origin, 'https://vistara.example');
+            expect(callbackUri.path, '/auth/mobile/callback');
+            state = callbackUri.queryParameters['state'];
+            codeChallenge = callbackUri.queryParameters['code_challenge'];
+            expect(state, matches(RegExp(r'^[A-Za-z0-9_-]{43}$')));
+            expect(codeChallenge, matches(RegExp(r'^[A-Za-z0-9_-]{43}$')));
+            return http.Response(
+              jsonEncode({
+                'url': 'https://neon.example/auth/sign-in/social/init',
+                'redirect': false,
+              }),
+              200,
+            );
+          }
+
+          if (request.url.path == '/api/mobile/auth/exchange') {
+            expect(request.headers['origin'], 'https://vistara.example');
             expect(jsonDecode(request.body), {
-              'provider': 'google',
-              'idToken': {'token': 'google-id-token'},
+              'ticket': ticket,
+              'state': state,
+              'verifier': store.pendingGoogleAuthVerifier,
             });
             return http.Response(
-              jsonEncode({'token': 'session-token'}),
+              jsonEncode({'authenticated': true}),
               200,
               headers: {
                 'set-cookie':
-                    'vistara.session=opaque-token; Path=/; HttpOnly; Secure; '
-                    'SameSite=Lax',
+                    '__Secure-neon-auth.session_token=opaque-token; Path=/; '
+                    'HttpOnly; Secure; SameSite=Lax',
               },
             );
           }
 
           expect(request.url.path, '/api/mobile/session');
-          expect(request.headers['cookie'], 'vistara.session=opaque-token');
+          expect(
+            request.headers['cookie'],
+            '__Secure-neon-auth.session_token=opaque-token',
+          );
           sessionRequestCount++;
           return http.Response(
             jsonEncode({
@@ -318,30 +347,141 @@ void main() {
         }),
       );
 
-      final session = await api.signInWithGoogle(idToken: 'google-id-token');
+      final authUri = await api.startGoogleSignIn();
+      expect(authUri.host, 'neon.example');
+      expect(store.pendingGoogleAuthState, state);
+      expect(
+        codeChallenge,
+        base64UrlEncode(
+          sha256.convert(utf8.encode(store.pendingGoogleAuthVerifier!)).bytes,
+        ).replaceAll('=', ''),
+      );
+
+      final session = await api.completeGoogleSignIn(
+        Uri(
+          scheme: 'vistara',
+          host: 'auth',
+          path: '/callback',
+          queryParameters: {'ticket': ticket, 'state': state},
+        ),
+      );
 
       expect(session.user.id, 'google-user');
       expect(sessionRequestCount, 1);
       expect(store.value, contains('opaque-token'));
+      expect(store.pendingGoogleAuthState, isNull);
     },
   );
 
-  test('Google sign-in rejects an empty identity token', () async {
+  test('Google sign-in rejects an invalid callback state', () async {
+    final store = _MemorySessionStore();
     final api = VistaraApi(
       baseUrl: 'https://vistara.example',
-      sessionStore: _MemorySessionStore(),
+      sessionStore: store,
     );
 
     await expectLater(
-      api.signInWithGoogle(idToken: '  '),
+      api.completeGoogleSignIn(
+        Uri(
+          scheme: 'vistara',
+          host: 'auth',
+          path: '/callback',
+          queryParameters: {
+            'ticket': 'one-time-handoff-ticket-0000000000000000000000000',
+            'state': 'unrecognized-state',
+          },
+        ),
+      ),
       throwsA(
         isA<VistaraApiException>().having(
           (error) => error.message,
           'message',
-          'Google did not return an identity token. Try again.',
+          'This Google sign-in attempt is no longer active. Start again.',
         ),
       ),
     );
+  });
+
+  test('Google sign-in rejects an unsafe authorization URL', () async {
+    final store = _MemorySessionStore();
+    final api = VistaraApi(
+      baseUrl: 'https://vistara.example',
+      sessionStore: store,
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode({'url': 'javascript:alert(1)', 'redirect': false}),
+          200,
+        ),
+      ),
+    );
+
+    await expectLater(
+      api.startGoogleSignIn(),
+      throwsA(
+        isA<VistaraApiException>().having(
+          (error) => error.message,
+          'message',
+          'Vistara returned an invalid Google sign-in address.',
+        ),
+      ),
+    );
+    expect(store.pendingGoogleAuthState, isNull);
+  });
+
+  test('Google OAuth cancellation clears its pending state', () async {
+    final store = _MemorySessionStore();
+    final api = VistaraApi(
+      baseUrl: 'https://vistara.example',
+      sessionStore: store,
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'url': 'https://neon.example/auth/sign-in/social/init',
+            'redirect': false,
+          }),
+          200,
+        ),
+      ),
+    );
+
+    await api.startGoogleSignIn();
+    final state = store.pendingGoogleAuthState!;
+
+    await expectLater(
+      api.completeGoogleSignIn(
+        Uri(
+          scheme: 'vistara',
+          host: 'auth',
+          path: '/callback',
+          queryParameters: {'state': state, 'error': 'google_sign_in_failed'},
+        ),
+      ),
+      throwsA(isA<VistaraApiException>()),
+    );
+    expect(store.pendingGoogleAuthState, isNull);
+  });
+
+  test('Google sign-in rejects a native redirect response', () async {
+    final store = _MemorySessionStore();
+    final api = VistaraApi(
+      baseUrl: 'https://vistara.example',
+      sessionStore: store,
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'url': 'https://neon.example/auth/sign-in/social/init',
+            'redirect': true,
+          }),
+          200,
+        ),
+      ),
+    );
+
+    await expectLater(
+      api.startGoogleSignIn(),
+      throwsA(isA<VistaraApiException>()),
+    );
+    expect(store.pendingGoogleAuthState, isNull);
   });
 
   test('expired sessions clear the local session cookie', () async {
@@ -423,6 +563,8 @@ void main() {
 
 class _MemorySessionStore implements VistaraSessionStore {
   String? value;
+  String? pendingGoogleAuthState;
+  String? pendingGoogleAuthVerifier;
 
   @override
   Future<String?> read() async => value;
@@ -435,5 +577,23 @@ class _MemorySessionStore implements VistaraSessionStore {
   @override
   Future<void> delete() async {
     value = null;
+  }
+
+  @override
+  Future<String?> readGoogleAuthState() async => pendingGoogleAuthState;
+
+  @override
+  Future<String?> readGoogleAuthVerifier() async => pendingGoogleAuthVerifier;
+
+  @override
+  Future<void> writeGoogleAuthAttempt(String state, String verifier) async {
+    pendingGoogleAuthState = state;
+    pendingGoogleAuthVerifier = verifier;
+  }
+
+  @override
+  Future<void> deleteGoogleAuthAttempt() async {
+    pendingGoogleAuthState = null;
+    pendingGoogleAuthVerifier = null;
   }
 }

@@ -13,8 +13,8 @@ format. The starting version is `1.0.0+2`.
 - **Build/revision** (`+N`): a monotonically increasing integer. Increment it
   for every release, including patch releases, and never reuse a build number.
 
-For example, the next patch release after `1.3.0+6` is `1.3.1+7`. A minor
-release would be `1.4.0+7`, and a major release would be `2.0.0+7`.
+For example, the next patch release after `1.3.1+7` is `1.3.2+8`. A minor
+release would be `1.4.0+8`, and a major release would be `2.0.0+8`.
 
 Use Conventional Commit prefixes to describe changes: `feat:` for features,
 `fix:` for fixes, and `BREAKING CHANGE:` in the commit body for incompatible
@@ -24,8 +24,8 @@ the release commit.
 ## Release commit and tag
 
 Every release must have a dedicated commit that updates `pubspec.yaml` and
-`CHANGELOG.md`. Use a commit subject such as `release: v1.3.0`, and create an
-annotated Git tag `v1.3.0` on that exact commit. The tag omits the Flutter
+`CHANGELOG.md`. Use a commit subject such as `release: v1.3.1`, and create an
+annotated Git tag `v1.3.1` on that exact commit. The tag omits the Flutter
 build number; the tagged commit's `pubspec.yaml` records it.
 
 Before tagging, run:
@@ -40,13 +40,13 @@ Then create and publish the versioned commit and tag:
 
 ```powershell
 git add pubspec.yaml CHANGELOG.md
-git commit -m "release: v1.3.0"
-git tag -a v1.3.0 -m "Vistara Mobile v1.3.0"
+git commit -m "release: v1.3.1"
+git tag -a v1.3.1 -m "Vistara Mobile v1.3.1"
 git push origin main
-git push origin v1.3.0
+git push origin v1.3.1
 ```
 
 Replace the example version with the value chosen for the release. The current
-release is `1.3.0+6`; this version and build number must be recorded in the
+release is `1.3.1+7`; this version and build number must be recorded in the
 release commit and its matching tag. A release tag must never point to a
 different commit than the version bump it names.

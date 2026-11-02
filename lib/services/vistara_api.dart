@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -164,22 +165,102 @@ class VistaraApi {
     return restoreSession();
   }
 
-  Future<AccountSession> signInWithGoogle({required String idToken}) async {
-    if (idToken.trim().isEmpty) {
+  Future<Uri> startGoogleSignIn() async {
+    final baseUri = _requireBaseUri();
+    final state = _createSecureToken();
+    final verifier = _createSecureToken();
+    final codeChallenge = base64UrlEncode(
+      sha256.convert(utf8.encode(verifier)).bytes,
+    ).replaceAll('=', '');
+    var started = false;
+
+    try {
+      await _sessionStore.writeGoogleAuthAttempt(state, verifier);
+      final callbackUri = baseUri
+          .resolve('/auth/mobile/callback')
+          .replace(
+            queryParameters: {
+              'state': state,
+              'code_challenge': codeChallenge,
+            },
+          );
+      final response = await _request(
+        'POST',
+        '/api/auth/sign-in/social',
+        body: {
+          'provider': 'google',
+          'callbackURL': callbackUri.toString(),
+          'disableRedirect': true,
+        },
+      );
+      final redirectUrl = response['url'];
+      if (response['redirect'] != false || redirectUrl is! String) {
+        throw const VistaraApiException(
+          'Vistara could not start Google sign-in. Please try again.',
+        );
+      }
+
+      final authUri = Uri.tryParse(redirectUrl);
+      if (authUri == null ||
+          authUri.scheme != 'https' ||
+          authUri.host.isEmpty ||
+          authUri.userInfo.isNotEmpty) {
+        throw const VistaraApiException(
+          'Vistara returned an invalid Google sign-in address.',
+        );
+      }
+
+      started = true;
+      return authUri;
+    } finally {
+      if (!started) await _sessionStore.deleteGoogleAuthAttempt();
+    }
+  }
+
+  Future<AccountSession> completeGoogleSignIn(Uri callbackUri) async {
+    final state = callbackUri.queryParameters['state'];
+    final pendingState = await _sessionStore.readGoogleAuthState();
+    final verifier = await _sessionStore.readGoogleAuthVerifier();
+    if (callbackUri.scheme != 'vistara' ||
+        callbackUri.host != 'auth' ||
+        callbackUri.path != '/callback' ||
+        state == null ||
+        state != pendingState ||
+        verifier == null ||
+        !RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(verifier)) {
       throw const VistaraApiException(
-        'Google did not return an identity token. Try again.',
+        'This Google sign-in attempt is no longer active. Start again.',
       );
     }
 
-    await _request(
-      'POST',
-      '/api/auth/sign-in/social',
-      body: {
-        'provider': 'google',
-        'idToken': {'token': idToken},
-      },
-    );
-    return restoreSession();
+    if (callbackUri.queryParameters.containsKey('error')) {
+      await _sessionStore.deleteGoogleAuthAttempt();
+      throw const VistaraApiException(
+        'Google sign-in was not completed. Please try again.',
+      );
+    }
+
+    final ticket = callbackUri.queryParameters['ticket'];
+    if (ticket == null || !RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(ticket)) {
+      await _sessionStore.deleteGoogleAuthAttempt();
+      throw const VistaraApiException(
+        'Vistara could not complete Google sign-in. Please try again.',
+      );
+    }
+
+    try {
+      await _request(
+        'POST',
+        '/api/mobile/auth/exchange',
+        body: {'ticket': ticket, 'state': state, 'verifier': verifier},
+      );
+      final session = await restoreSession();
+      await _sessionStore.deleteGoogleAuthAttempt();
+      return session;
+    } catch (_) {
+      await _sessionStore.deleteGoogleAuthAttempt();
+      rethrow;
+    }
   }
 
   Future<AccountSession?> signUp({
@@ -227,6 +308,7 @@ class VistaraApi {
 
   Future<void> clearSession() async {
     await _sessionStore.delete();
+    await _sessionStore.deleteGoogleAuthAttempt();
   }
 
   Future<Map<String, dynamic>> _request(
@@ -490,12 +572,22 @@ abstract interface class VistaraSessionStore {
   Future<void> write(String value);
 
   Future<void> delete();
+
+  Future<String?> readGoogleAuthState();
+
+  Future<String?> readGoogleAuthVerifier();
+
+  Future<void> writeGoogleAuthAttempt(String state, String verifier);
+
+  Future<void> deleteGoogleAuthAttempt();
 }
 
 class SecureVistaraSessionStore implements VistaraSessionStore {
   SecureVistaraSessionStore(this._storage);
 
   static const _key = 'vistara_auth_cookies';
+  static const _googleAuthStateKey = 'vistara_google_auth_state';
+  static const _googleAuthVerifierKey = 'vistara_google_auth_verifier';
 
   final FlutterSecureStorage _storage;
 
@@ -531,6 +623,54 @@ class SecureVistaraSessionStore implements VistaraSessionStore {
       );
     }
   }
+
+  @override
+  Future<String?> readGoogleAuthState() async {
+    try {
+      return await _storage.read(key: _googleAuthStateKey);
+    } on PlatformException {
+      throw const VistaraApiException(
+        'Unable to access secure Google sign-in storage on this device.',
+      );
+    }
+  }
+
+  @override
+  Future<String?> readGoogleAuthVerifier() async {
+    try {
+      return await _storage.read(key: _googleAuthVerifierKey);
+    } on PlatformException {
+      throw const VistaraApiException(
+        'Unable to access secure Google sign-in storage on this device.',
+      );
+    }
+  }
+
+  @override
+  Future<void> writeGoogleAuthAttempt(String state, String verifier) async {
+    try {
+      await _storage.write(key: _googleAuthStateKey, value: state);
+      await _storage.write(key: _googleAuthVerifierKey, value: verifier);
+    } on PlatformException {
+      throw const VistaraApiException(
+        'Unable to securely prepare Google sign-in on this device.',
+      );
+    }
+  }
+
+  @override
+  Future<void> deleteGoogleAuthAttempt() async {
+    try {
+      await Future.wait([
+        _storage.delete(key: _googleAuthStateKey),
+        _storage.delete(key: _googleAuthVerifierKey),
+      ]);
+    } on PlatformException {
+      throw const VistaraApiException(
+        'Unable to clear Google sign-in state on this device.',
+      );
+    }
+  }
 }
 
 class VistaraApiException implements Exception {
@@ -555,4 +695,12 @@ String _createUuidV4() {
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
       '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
       '${hex.substring(20)}';
+}
+
+String _createSecureToken() {
+  final bytes = List<int>.generate(
+    32,
+    (_) => Random.secure().nextInt(256),
+  );
+  return base64UrlEncode(bytes).replaceAll('=', '');
 }

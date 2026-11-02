@@ -79,14 +79,13 @@ over HTTP. To intentionally build an offline preview, use the APK script's
 `APP_BASE_URL` in the Next.js `.env.local` is a separate server setting; it
 does not automatically become a Flutter compile-time define.
 
-Google sign-in also requires the deployed Neon Auth Google provider to be
-configured. In Google Cloud, register an Android OAuth client for package
-`com.vistara.mobile` and the SHA-1 fingerprints of every signing certificate
-used (debug, sideload, and production/Play signing as applicable). The app
-uses the configured web OAuth client as its server client ID; override it for
-another deployment with
-`--dart-define=VISTARA_GOOGLE_SERVER_CLIENT_ID=<web-client-id>`. This client ID
-is public configuration, not a client secret.
+Google sign-in uses the same Neon Auth browser redirect as the Next.js app.
+The mobile app returns to Vistara through the registered `vistara://auth/callback`
+link, then exchanges a short-lived, single-use handoff for its Neon session
+cookie. A PKCE verifier remains in secure device storage and is required to
+redeem the handoff. Configure Google as an enabled Neon Auth provider and apply
+the Next.js migration with `npm run db:migrate:deploy` before using this flow.
+No Android OAuth client ID or app-signing SHA-1 is required for mobile sign-in.
 
 The client uses these service endpoints:
 
@@ -96,6 +95,7 @@ The client uses these service endpoints:
 | `GET /api/mobile/access-products` | Available admin-managed subscription plans |
 | `POST /api/payments/marzpay/collections` | Start an authenticated MarzPay payment |
 | `GET /api/mobile/session` | Authenticated profile, entitlement, and recent purchases |
+| `POST /api/mobile/auth/exchange` | Exchange a short-lived Google sign-in handoff for a mobile session |
 | `GET /api/movies/{slug}/playback` | Entitlement-protected MP4 stream with byte-range support |
 | `/api/auth/*` | Neon Auth email/Google sign-in, sign-up, sign-out, and password reset |
 

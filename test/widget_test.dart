@@ -302,4 +302,16 @@ class _MemorySessionStore implements VistaraSessionStore {
 
   @override
   Future<void> delete() async {}
+
+  @override
+  Future<String?> readGoogleAuthState() async => null;
+
+  @override
+  Future<String?> readGoogleAuthVerifier() async => null;
+
+  @override
+  Future<void> writeGoogleAuthAttempt(String state, String verifier) async {}
+
+  @override
+  Future<void> deleteGoogleAuthAttempt() async {}
 }
