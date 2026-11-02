@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'services/vistara_api.dart';
 import 'screens/app_shell.dart';
 import 'theme/app_theme.dart';
 
@@ -8,7 +9,9 @@ void main() {
 }
 
 class VistaraApp extends StatelessWidget {
-  const VistaraApp({super.key});
+  const VistaraApp({super.key, this.api});
+
+  final VistaraApi? api;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +21,7 @@ class VistaraApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       darkTheme: AppTheme.dark,
       theme: AppTheme.light,
-      home: const AppShell(),
+      home: AppShell(api: api),
     );
   }
 }

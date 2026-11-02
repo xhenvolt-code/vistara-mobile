@@ -7,6 +7,20 @@ import 'package:vistara_mobile/models/access_product.dart';
 import 'package:vistara_mobile/services/vistara_api.dart';
 
 void main() {
+  test('defaults to the deployed Vistara API origin', () async {
+    final api = VistaraApi(
+      sessionStore: _MemorySessionStore(),
+      client: MockClient((request) async {
+        expect(request.url.origin, 'https://vistara-main.vercel.app');
+        expect(request.url.path, '/api/mobile/catalogue');
+        return http.Response(jsonEncode({'movies': []}), 200);
+      }),
+    );
+
+    expect(api.isConfigured, isTrue);
+    expect(await api.loadCatalogue(), isEmpty);
+  });
+
   test('catalogue response maps approved film metadata and genres', () async {
     final api = VistaraApi(
       baseUrl: 'https://vistara.example',
@@ -87,28 +101,31 @@ void main() {
     expect(products.single.durationDays, 7);
   });
 
-  test('playback URL and headers use the protected, authenticated endpoint', () async {
-    final store = _MemorySessionStore()
-      ..value = jsonEncode({
-        'origin': 'https://vistara.example',
-        'cookies': {
-          'vistara.session': {'value': 'opaque-token', 'secure': true},
-        },
-      });
-    final api = VistaraApi(
-      baseUrl: 'https://vistara.example',
-      sessionStore: store,
-    );
+  test(
+    'playback URL and headers use the protected, authenticated endpoint',
+    () async {
+      final store = _MemorySessionStore()
+        ..value = jsonEncode({
+          'origin': 'https://vistara.example',
+          'cookies': {
+            'vistara.session': {'value': 'opaque-token', 'secure': true},
+          },
+        });
+      final api = VistaraApi(
+        baseUrl: 'https://vistara.example',
+        sessionStore: store,
+      );
 
-    expect(
-      api.playbackUri('night-road'),
-      Uri.parse('https://vistara.example/api/movies/night-road/playback'),
-    );
-    expect(await api.playbackHeaders(), {
-      'Accept': 'video/mp4',
-      'Cookie': 'vistara.session=opaque-token',
-    });
-  });
+      expect(
+        api.playbackUri('night-road'),
+        Uri.parse('https://vistara.example/api/movies/night-road/playback'),
+      );
+      expect(await api.playbackHeaders(), {
+        'Accept': 'video/mp4',
+        'Cookie': 'vistara.session=opaque-token',
+      });
+    },
+  );
 
   test('playback requires an authenticated session cookie', () async {
     final api = VistaraApi(
@@ -121,7 +138,11 @@ void main() {
       throwsA(
         isA<VistaraApiException>()
             .having((error) => error.statusCode, 'status code', 401)
-            .having((error) => error.message, 'message', 'Sign in to watch this title.'),
+            .having(
+              (error) => error.message,
+              'message',
+              'Sign in to watch this title.',
+            ),
       ),
     );
   });
@@ -236,8 +257,7 @@ void main() {
           jsonEncode({'products': []}),
           200,
           headers: {
-            'set-cookie':
-                'vistara.session=; Path=/; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure',
+            'set-cookie': 'vistara.session=; Path=/; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure',
           },
         ),
       ),
@@ -249,7 +269,7 @@ void main() {
   });
 
   test('unconfigured API fails with setup guidance, not fake data', () async {
-    final api = VistaraApi(sessionStore: _MemorySessionStore());
+    final api = VistaraApi(baseUrl: '', sessionStore: _MemorySessionStore());
 
     expect(api.isConfigured, isFalse);
     await expectLater(

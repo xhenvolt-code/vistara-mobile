@@ -68,9 +68,9 @@ class PassesScreen extends StatelessWidget {
                 const PreviewNotice(
                   title: 'Vistara server not configured',
                   message:
-                      'Build the app with VISTARA_API_BASE_URL to load live '
-                      'access products. Passes and prices are not fabricated '
-                      'in offline preview mode.',
+                      'Connect to a Vistara API origin to load live access '
+                      'products. Passes and prices are not fabricated in '
+                      'offline preview mode.',
                 )
               else if (products.isEmpty)
                 const _EmptyPasses()

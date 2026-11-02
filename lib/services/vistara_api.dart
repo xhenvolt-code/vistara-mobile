@@ -22,7 +22,11 @@ class VistaraApi {
              secureStorage ?? const FlutterSecureStorage(),
            ),
        _baseUri = _parseBaseUri(
-         baseUrl ?? const String.fromEnvironment('VISTARA_API_BASE_URL'),
+         baseUrl ??
+             const String.fromEnvironment(
+               'VISTARA_API_BASE_URL',
+               defaultValue: 'https://vistara-main.vercel.app',
+             ),
        );
 
   final http.Client _client;

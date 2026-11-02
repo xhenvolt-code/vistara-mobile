@@ -55,7 +55,10 @@ flutter analyze
 flutter test
 ```
 
-Run against the deployed Vistara service:
+The app defaults to the deployed Vistara API at
+`https://vistara-main.vercel.app`, so connected data and account features work
+without an extra build define. Override that origin only for a separate
+deployment:
 
 ```powershell
 flutter run --dart-define=VISTARA_API_BASE_URL=https://your-vistara-domain.example
@@ -63,8 +66,8 @@ flutter run --dart-define=VISTARA_API_BASE_URL=https://your-vistara-domain.examp
 
 `VISTARA_API_BASE_URL` must be an HTTP(S) origin with no path, query, or
 fragment. Use HTTPS in production; secure authentication cookies are not sent
-over HTTP. If the define is omitted, the app opens in a clearly labelled
-offline preview and does not claim that authentication or live data works.
+over HTTP. To intentionally build an offline preview, use the APK script's
+`-AllowOfflinePreview` option.
 `APP_BASE_URL` in the Next.js `.env.local` is a separate server setting; it
 does not automatically become a Flutter compile-time define.
 
@@ -93,16 +96,15 @@ Build a 64-bit Android APK connected to the production service:
   -ApiBaseUrl https://your-vistara-domain.example
 ```
 
-For repeated builds, configure `VISTARA_API_BASE_URL` in the shell or CI
-environment and omit `-ApiBaseUrl`. Release builds fail before compilation if
-no deployment origin is provided, preventing accidental offline-preview
-release installers. To intentionally package a preview, pass
+The APK script defaults to `https://vistara-main.vercel.app`. Use
+`-ApiBaseUrl` or `VISTARA_API_BASE_URL` only to override it. To intentionally
+package an offline preview without live data or account access, pass
 `-AllowOfflinePreview`.
 
 Every Android APK build automatically creates a Vistara-named APK in
 `build/app/outputs/flutter-apk/`, following
 `vistara-[version]-[channel]-[revision].apk`. For example, the current stable
-release is `vistara-1.2.0-stable-4.apk`. The script removes Flutter's generic
+release is `vistara-1.2.1-stable-5.apk`. The script removes Flutter's generic
 `app-release.apk` compatibility output after verifying the named APK, leaving
 the Vistara filename as the installer artifact. ABI-split or flavored builds
 add their variant identifier before `.apk`.
@@ -116,9 +118,8 @@ example:
 ```
 
 The optional revision is the build number after `+` in `pubspec.yaml`. Use the
-deployment's public HTTPS origin. Debug/profile builds without `-ApiBaseUrl`
-remain offline previews; release builds require an origin unless
-`-AllowOfflinePreview` is explicitly supplied. Direct Flutter Gradle builds
+deployment's public HTTPS origin. Debug/profile/release builds without an
+override use `https://vistara-main.vercel.app`. Direct Flutter Gradle builds
 also generate the Vistara-named APK, but the Flutter CLI's generic
 compatibility output remains; use the script when you want only the
 versioned installer left in the output folder.

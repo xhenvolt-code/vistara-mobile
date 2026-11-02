@@ -14,14 +14,16 @@ import 'home_screen.dart';
 import 'passes_screen.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({super.key, this.api});
+
+  final VistaraApi? api;
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends State<AppShell> {
-  final _api = VistaraApi();
+  late final VistaraApi _api;
   int _selectedIndex = 0;
   late List<Movie> _movies;
   List<AccessProduct> _products = const [];
@@ -37,6 +39,7 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    _api = widget.api ?? VistaraApi();
     _movies = _isPreview ? demoCatalogue : const [];
     if (_api.isConfigured) {
       _loadCatalogue();

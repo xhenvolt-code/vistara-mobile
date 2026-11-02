@@ -3,6 +3,12 @@
 All notable releases of Vistara Mobile are recorded here. Versions follow the
 policy in [VERSIONING.md](VERSIONING.md).
 
+## [1.2.1] - 2026-11-02
+
+- Configure `https://vistara-main.vercel.app` as the default API origin for
+  app launches and APK builds.
+- Keep offline preview builds available as an explicit opt-in.
+
 ## [1.2.0] - 2026-11-02
 
 - Add authenticated MP4 playback through Vistara's entitlement-protected

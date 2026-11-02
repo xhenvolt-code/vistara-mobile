@@ -246,9 +246,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             const PreviewNotice(
                               title: 'Vistara server not configured',
                               message:
-                                  'Set VISTARA_API_BASE_URL when building the '
-                                  'app to enable account sign-in and password '
-                                  'recovery.',
+                                  'Use a connected Vistara API origin to '
+                                  'enable account sign-in and password recovery.',
                             ),
                           ],
                           const SizedBox(height: 18),

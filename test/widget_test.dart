@@ -17,14 +17,16 @@ void main() {
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
 
-    await tester.pumpWidget(const VistaraApp());
+    await tester.pumpWidget(_offlinePreviewApp());
     expect(
       Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
       Brightness.light,
     );
 
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
-    await tester.pumpWidget(const VistaraApp(key: ValueKey('dark-mode')));
+    await tester.pumpWidget(
+      VistaraApp(key: const ValueKey('dark-mode'), api: _offlineApi()),
+    );
     expect(
       Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
       Brightness.dark,
@@ -32,7 +34,7 @@ void main() {
   });
 
   testWidgets('home introduces the preview catalogue', (tester) async {
-    await tester.pumpWidget(const VistaraApp());
+    await tester.pumpWidget(_offlinePreviewApp());
 
     expect(find.text('Movie lover'), findsOneWidget);
     expect(find.text('Preview catalogue'), findsOneWidget);
@@ -43,7 +45,7 @@ void main() {
   });
 
   testWidgets('catalogue search filters preview listings', (tester) async {
-    await tester.pumpWidget(const VistaraApp());
+    await tester.pumpWidget(_offlinePreviewApp());
     await tester.tap(find.text('Discover').last);
     await tester.pumpAndSettle();
 
@@ -58,7 +60,7 @@ void main() {
   });
 
   testWidgets('offline passes never show fabricated prices', (tester) async {
-    await tester.pumpWidget(const VistaraApp());
+    await tester.pumpWidget(_offlinePreviewApp());
     await tester.tap(find.text('Passes').last);
     await tester.pumpAndSettle();
 
@@ -75,7 +77,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const VistaraApp());
+    await tester.pumpWidget(_offlinePreviewApp());
     await tester.tap(find.text('Discover').last);
     await tester.pumpAndSettle();
 
@@ -190,15 +192,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Access pass required'), findsOneWidget);
-    expect(find.text('An active Vistara access pass is required to watch.'),
-        findsOneWidget);
+    expect(
+      find.text('An active Vistara access pass is required to watch.'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('View access passes'));
     await tester.pumpAndSettle();
     expect(openedPasses, isTrue);
   });
 
   testWidgets('account form does not claim to authenticate', (tester) async {
-    await tester.pumpWidget(const VistaraApp());
+    await tester.pumpWidget(_offlinePreviewApp());
     await tester.tap(find.byIcon(Icons.person_outline_rounded).first);
     await tester.pumpAndSettle();
 
@@ -206,6 +210,11 @@ void main() {
     expect(find.text('Vistara server not configured'), findsOneWidget);
   });
 }
+
+VistaraApp _offlinePreviewApp() => VistaraApp(api: _offlineApi());
+
+VistaraApi _offlineApi() =>
+    VistaraApi(baseUrl: '', sessionStore: _MemorySessionStore());
 
 class _MemorySessionStore implements VistaraSessionStore {
   @override

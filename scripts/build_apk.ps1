@@ -27,8 +27,12 @@ try {
     $enteredProject = $true
     $env:VISTARA_CHANNEL = $Channel
 
-    if ([string]::IsNullOrWhiteSpace($ApiBaseUrl)) {
+    if ([string]::IsNullOrWhiteSpace($ApiBaseUrl) -and -not $AllowOfflinePreview) {
         $ApiBaseUrl = $env:VISTARA_API_BASE_URL
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ApiBaseUrl) -and -not $AllowOfflinePreview) {
+        $ApiBaseUrl = "https://vistara-main.vercel.app"
     }
 
     if ([string]::IsNullOrWhiteSpace($ApiBaseUrl)) {
@@ -66,8 +70,11 @@ try {
         $flutterArguments += "--dart-define=VISTARA_API_BASE_URL=$ApiBaseUrl"
         $origin = [Uri]$ApiBaseUrl
         Write-Output "Embedding Vistara API origin: $($origin.GetLeftPart([UriPartial]::Authority))"
+    } elseif ($AllowOfflinePreview) {
+        $flutterArguments += "--dart-define=VISTARA_API_BASE_URL="
+        Write-Warning "Building an offline preview; live data and account features will be unavailable."
     } else {
-        Write-Warning "Building without a Vistara API origin; live data and account features will be unavailable."
+        throw "No Vistara API origin was selected."
     }
 
     & flutter @flutterArguments
